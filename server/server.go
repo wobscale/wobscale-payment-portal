@@ -1,0 +1,35 @@
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/sqs/mux"
+	"github.com/stripe/stripe-go"
+	"github.com/wobscale/stripe-subscribe-server/server/api"
+)
+
+func main() {
+	stripeApiKey := os.Getenv("STRIPE_API_KEY")
+	if stripeApiKey == "" {
+		panic("STRIPE_API_KEY environment variable required")
+	}
+	stripe.Key = stripeApiKey
+
+	githubSecretKey := os.Getenv("GITHUB_SECRET_KEY")
+	if githubSecretKey == "" {
+		panic("GITHUB_SECRET_KEY environment variable required")
+	}
+	githubClientId := os.Getenv("GITHUB_CLIENT_ID")
+	if githubClientId == "" {
+		panic("GITHUB_CLIENT_ID environment variable required")
+	}
+
+	router := mux.NewRouter().StrictSlash(true)
+
+	router.HandleFunc("/new", api.NewSubscription)
+	router.HandleFunc("/user", api.GetUser)
+	router.HandleFunc("/githubLogin", api.GithubLogin(githubSecretKey, githubClientId))
+	log.Fatal(http.ListenAndServe(":8080", router))
+}

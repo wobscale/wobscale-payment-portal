@@ -1,0 +1,19 @@
+<h3> Login with Github! <h3>
+<p> Right now, we only support Github login, sorry. Once you've logged in, you'll be able to manage payment methods and subscriptions </p>
+<br>
+
+<div id="login-1" ng-show="step == 1">
+  <p> Click the below to login. After going through it, you'll end up here again. Please note, the code displayed below should not have changed. If it did, you might be suffering a security issue! Act appropriately. </p>
+
+  Code: <pre>{{ randomCode }}</pre>
+
+  <a href="https://github.com/login/oauth/authorize?scope=user:email&client_id={{ githubClientId }}&state={{ randomCode }}">Login With Github</a>
+</div>
+<div id="login-2" ng-show="step == 2">
+  <p> Click the below to continue, but only if the code matches what you saw before! </p>
+
+  Code: <pre>{{ randomCode }}</pre>
+
+  <a href="#" ng-click="login()">Finish Login</a>
+</div>
+

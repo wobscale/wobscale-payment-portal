@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html ng-app="WobscalePayments">
+    <head>
+        <meta charset="utf-8">
+        <title>$$$ WOBSCALE TECHNOLOGIES LLC $$$</title>
+        <link rel="stylesheet" href="/css/style.css">
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-route.min.js"></script>
+        <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+        <script type="text/javascript">
+            Stripe.setPublishableKey('pk_test_7hpzed6hEuKjgw64uTUvaolk');
+        </script>
+        <script src="/js/client.js"></script>
+    </head>
+    <body>
+        <base href="/">
+        <header>
+            <h1>Wobscale invoicing</h1>
+            <p>~ give us money to scale the wob ~</p>
+        </header>
+        <div id="content" ng-view>
+        </div>
+
+        <footer>
+            <p>Your GitHub login is only used to associate you with a Stripe customer object, and all payment data is <a href="https://stripe.com/docs/security">stored securely with Stripe</a>.</p>
+        </footer>
+    </body>
+</html>

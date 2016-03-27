@@ -1,0 +1,29 @@
+body {
+  padding: 8em;
+  font-family: sans-serif;
+}
+
+section {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+header {
+  border-bottom: 1px solid #ddd;
+}
+
+header h1 {
+  margin-bottom: 0;
+}
+
+header p {
+  font-style: italic;
+  margin-top: .5em;
+}
+
+footer {
+  margin-top: 3rem;
+  font-size: 75%;
+  color: #444;
+}
+
