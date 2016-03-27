@@ -100,7 +100,7 @@
     var showAvailablePlans = function() {
       $http.get("http://paypi.wobscale.website/plans").then(function(resp) {
         $scope.data.plans = resp.data;
-        $scope.data.addPlanName = $scope.data.plans[0].Name;
+        $scope.data.addPlanName = $scope.data.plans[0].ID;
       }, function(err) {
         window.alert("Unable to get plan information!");
       });

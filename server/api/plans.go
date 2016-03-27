@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/plan"
 )
 
 type Plan string
@@ -13,19 +18,24 @@ const (
 	Plan2U = "colo-sea1-2U"
 )
 
-func ValidPlan(plan string) bool {
-	return plan == Plan1U || plan == Plan2U
+func PlanPrice(plan string) (uint64, error) {
+	_, plans, err := getStripePlans()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, p := range plans {
+		if p.ID == plan {
+			return p.Amount, nil
+		}
+	}
+
+	return 0, errors.New("Invalid plan")
 }
 
-func PlanPrice(plan string) (uint64, error) {
-	switch plan {
-	case Plan1U:
-		return 80, nil
-	case Plan2U:
-		return 140, nil
-	default:
-		return 0, errors.New("Invalid plan")
-	}
+func ValidPlan(plan string) bool {
+	_, err := PlanPrice(plan)
+	return err == nil
 }
 
 type SubPlan struct {
@@ -38,29 +48,56 @@ type PlanResp []PlanRespEl
 
 type PlanRespEl struct {
 	Name string
+	ID   string
 	Cost uint64
 }
 
-var planResp PlanResp
-var planRespCache []byte
+var stripePlanCacheMutex sync.Mutex
+var stripePlanCache []*stripe.Plan
+var stripePlanRespCache []byte
 
-func init() {
-	var err error
-	planResp = PlanResp{}
-	for _, el := range []string{Plan1U, Plan2U} {
-		price, err := PlanPrice(el)
-		if err != nil {
-			panic(err)
-		}
-		planResp = append(planResp, PlanRespEl{Name: el, Cost: price})
+func getStripePlans() ([]byte, []*stripe.Plan, error) {
+	stripePlanCacheMutex.Lock()
+	defer stripePlanCacheMutex.Unlock()
+	if stripePlanCache != nil {
+		return stripePlanRespCache, stripePlanCache, nil
 	}
-	planRespCache, err = json.Marshal(planResp)
+
+	plans := plan.List(&stripe.PlanListParams{})
+	if plans.Err() != nil {
+		return nil, nil, errors.New("Error getting plans: " + plans.Err().Error())
+	}
+
+	planArr := []*stripe.Plan{}
+	planResp := PlanResp{}
+	for plans.Next() {
+		plan := plans.Plan()
+		planArr = append(planArr, plan)
+		planResp = append(planResp, PlanRespEl{
+			Name: plan.Name,
+			ID:   plan.ID,
+			Cost: plan.Amount,
+		})
+	}
+
+	tmp, err := json.Marshal(planResp)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
+
+	stripePlanCache = planArr
+	stripePlanRespCache = tmp
+	return stripePlanRespCache, stripePlanCache, nil
 }
 
 func GetPlans(w http.ResponseWriter, r *http.Request) {
+	data, _, err := getStripePlans()
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	logrus.Info(string(data))
 	w.WriteHeader(200)
-	w.Write(planRespCache)
+	w.Write(data)
 }
