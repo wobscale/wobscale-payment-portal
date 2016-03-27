@@ -5,7 +5,7 @@
   <section id="subscription">
     <p>You pay <strong>${{ totalSub() / 100 }} </strong> monthly for the following:</p>
     <ul>
-      <li ng-repeat="plan in data.subbedPlans"> {{ plan.Num }} &times; {{ plan.Name }} at sea1 (Westin Building, Seattle): <strong>${{ plan.Cost / 100}}</strong></li>
+      <li ng-repeat="plan in data.subbedPlans"> {{ plan.Num }} &times; {{ plan.Name }}: <strong>${{ plan.Cost / 100}} &times; {{ plan.Num }} = ${{ plan.Cost * plan.Num / 100 }}</strong></li>
     </ul>
     <p>If this is wrong, email <a href="mailto:admin@wobscale.website">admin@wobscale.website</a>.</p>
   </section>

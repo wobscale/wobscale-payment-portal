@@ -57,16 +57,25 @@
 
 
   app.controller('SubscriptionsCtrl', ['$scope', '$location', '$http', function($scope, $location, $http) {
-    // Now to load stuff; we need this user's subscriptions and related information
-    var accessToken = window.localStorage.getItem("githubAccessKey");
+    var accessToken;
 
-    $scope.data = {};
-    $scope.newUser = false;
-    $scope.data.plans = [];
-    $scope.data.subbedPlans = [];
-    $scope.data.addPlanNum = 1;
-    $scope.data.addPlanName = "loading...";
-    $scope.data.paymentSource = "";
+    var initialize = function() {
+      accessToken = window.localStorage.getItem("githubAccessKey");
+
+      //$scope.data.loading = true;
+      $scope.data = {};
+      $scope.newUser = false;
+      $scope.data.plans = [];
+      $scope.data.subbedPlans = [];
+      $scope.data.addPlanNum = 1;
+      $scope.data.addPlanName = "loading...";
+      $scope.data.paymentSource = "";
+
+      updateUserInfo();
+      showAvailablePlans();
+      // TODO, promises for both of those, and handle loading out here
+      //.then($scope.data.loading = false)
+    };
 
     $scope.totalSub = function() {
       return $scope.data.subbedPlans.map(function(el) { return el.Cost * el.Num; }).reduce(function(lhs, rhs) { return lhs + rhs; }, 0);
@@ -82,7 +91,7 @@
         PlanName: $scope.data.addPlanName,
         PlanNum: $scope.data.addPlanNum,
       }).then(function(resp) {
-        $route.reload();
+        initialize();
       }, function(err) {
         alert("Plan adding failed: " + JSON.stringify(err));
       });
@@ -97,26 +106,26 @@
       });
     };
 
-    $http.post("http://paypi.wobscale.website/user", {GithubAccessToken: accessToken})
-      .then(function(resp) {
-        $scope.githubUsername = resp.data.GithubUsername;
-        if(resp.data.NewUser) {
-          $scope.newUser = true;
-        } else {
-          $scope.stripeId = resp.data.StripeCustomerID;
-          $scope.data.subbedPlans = resp.data.Plans;
-          $scope.data.paymentSource = resp.data.PaymentSource;
-          // TODO cardinfo
-          showAvailablePlans();
-        }
-      }, function(err) {
-        if(err.data.GithubAuthError) {
-          window.alert("Bad github login");
-          $scope.logout();
-          return;
-        }
-        window.alert(JSON.stringify(err));
-      });
+    var updateUserInfo = function() {
+      $http.post("http://paypi.wobscale.website/user", {GithubAccessToken: accessToken})
+        .then(function(resp) {
+          $scope.githubUsername = resp.data.GithubUsername;
+          if(resp.data.NewUser) {
+            $scope.newUser = true;
+          } else {
+            $scope.stripeId = resp.data.StripeCustomerID;
+            $scope.data.subbedPlans = resp.data.Plans;
+            $scope.data.paymentSource = resp.data.PaymentSource;
+          }
+        }, function(err) {
+          if(err.data.GithubAuthError) {
+            window.alert("Bad github login");
+            $scope.logout();
+            return;
+          }
+          window.alert(JSON.stringify(err));
+        });
+    };
 
     var createCustomer = function(token) {
       $http.post("http://paypi.wobscale.website/new", {
@@ -143,5 +152,7 @@
       window.localStorage.removeItem("githubAccessKey");
       $location.path('/login');
     };
+
+    initialize();
   }]);
 })();
