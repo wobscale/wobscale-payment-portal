@@ -90,7 +90,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := GetUserResp{
-		GithubUsername:   *authedUser.Name,
+		GithubUsername:   *authedUser.Login,
 		StripeCustomerID: thisCustomer.ID,
 		PaymentSource:    thisCustomer.DefaultSource,
 	}
