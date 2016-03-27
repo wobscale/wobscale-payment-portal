@@ -134,15 +134,33 @@
         GithubAccessToken: accessToken,
         StripeToken: token
       }).then(function(resp) {
-        alert(JSON.stringify(resp));
+        initialize();
       }, function(err) {
         alert(JSON.stringify(err));
       });
     };
 
+    var addPayment = function(token) {
+      $http.post("http://paypi.wobscale.website/updatePayment", {
+        GithubAccessToken: accessToken,
+        StripeToken: token
+      }).then(function(resp) {
+        $scope.editPaymentSource = false;
+        initialize();
+      }, function(err) {
+        alert(JSON.stringify(err));
+      });
+    };
+
+    $scope.addDefaultPayment = function() {
+      window.Stripe.card.createToken(document.querySelector("#add-payment-form"), function(status, resp) {
+        var customerToken = resp.id;
+        addPayment(customerToken);
+      });
+    };
+
     $scope.createPayment = function() {
       window.Stripe.card.createToken(document.querySelector("#payment-form"), function(status, resp) {
-        alert(status);
         var customerToken = resp.id;
         createCustomer(customerToken);
       });

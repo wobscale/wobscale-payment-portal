@@ -29,6 +29,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/new", api.NewSubscription)
+	router.HandleFunc("/updatePayment", api.UpdatePayment)
 	router.HandleFunc("/addSubscription", api.AddSubscription)
 	router.HandleFunc("/user", api.GetUser)
 	router.HandleFunc("/githubLogin", api.GithubLogin(githubSecretKey, githubClientId))
