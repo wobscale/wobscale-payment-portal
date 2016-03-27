@@ -61,6 +61,11 @@
     var accessToken = window.localStorage.getItem("githubAccessKey");
 
     $scope.newUser = false;
+    $scope.plans = [];
+
+    $scope.totalSub = function() {
+      return $scope.plans.reduce(function(lhs, rhs) { return lhs.Cost*lhs.Num + rhs.Cost*rhs.Num; }, 0) / 100;
+    };
 
     $http.post("http://paypi.wobscale.website/user", {GithubAccessToken: accessToken})
       .then(function(resp) {

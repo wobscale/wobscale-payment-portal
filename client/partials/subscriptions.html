@@ -3,7 +3,7 @@
 </section>
 <div id="subinfo" ng-show="!newUser">
   <section id="subscription">
-    <p>You pay <strong>${{ totalSub }} </strong> monthly for the following:</p>
+    <p>You pay <strong>${{ totalSub() }} </strong> monthly for the following:</p>
     <ul>
       <li ng-repeat="plan in plans"> {{ plan.count }} &times; {{ plan.name }} at sea1 (Westin Building, Seattle): <strong>${{ plan.cost }}</strong></li>
     </ul>
