@@ -53,6 +53,10 @@ func getStripeUser(githubToken string) (*stripe.Customer, error) {
 	if err != nil {
 		return nil, err
 	}
+	return _stripeUser(githubUser)
+}
+
+func _stripeUser(githubUser *github.User) (*stripe.Customer, error) {
 	githubUid := strconv.Itoa(*githubUser.ID)
 	customer.List(&stripe.CustomerListParams{})
 
@@ -72,4 +76,13 @@ func getStripeUser(githubToken string) (*stripe.Customer, error) {
 		return nil, errors.New("No such customer")
 	}
 	return thisCustomer, nil
+}
+
+func getStripeAndGithubUser(githubToken string) (*stripe.Customer, *github.User, error) {
+	ghub, err := githubUser(githubToken)
+	if err != nil {
+		return nil, nil, err
+	}
+	stripeUser, err := _stripeUser(ghub)
+	return stripeUser, ghub, err
 }
