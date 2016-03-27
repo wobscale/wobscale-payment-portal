@@ -60,11 +60,41 @@
     // Now to load stuff; we need this user's subscriptions and related information
     var accessToken = window.localStorage.getItem("githubAccessKey");
 
+    $scope.data = {};
     $scope.newUser = false;
-    $scope.plans = [];
+    $scope.data.plans = [];
+    $scope.data.subbedPlans = [];
+    $scope.data.addPlanNum = 1;
+    $scope.data.addPlanName = "loading...";
+    $scope.data.paymentSource = "";
 
     $scope.totalSub = function() {
-      return $scope.plans.reduce(function(lhs, rhs) { return lhs.Cost*lhs.Num + rhs.Cost*rhs.Num; }, 0) / 100;
+      return $scope.data.subbedPlans.map(function(el) { return el.Cost * el.Num; }).reduce(function(lhs, rhs) { return lhs + rhs; }, 0);
+    };
+
+    $scope.addSub = function() {
+      if($scope.data.addPlanNum < 1 || $scope.data.addPlanNum > 100) {
+        window.alert("Invalid plan configuration; pick a small numeric number of subscriptions");
+        return;
+      }
+      $http.post("http://paypi.wobscale.website/addSubscription", {
+        GithubAccessToken: accessToken,
+        PlanName: $scope.data.addPlanName,
+        PlanNum: $scope.data.addPlanNum,
+      }).then(function(resp) {
+        $route.reload();
+      }, function(err) {
+        alert("Plan adding failed: " + JSON.stringify(err));
+      });
+    };
+
+    var showAvailablePlans = function() {
+      $http.get("http://paypi.wobscale.website/plans").then(function(resp) {
+        $scope.data.plans = resp.data;
+        $scope.data.addPlanName = $scope.data.plans[0].Name;
+      }, function(err) {
+        window.alert("Unable to get plan information!");
+      });
     };
 
     $http.post("http://paypi.wobscale.website/user", {GithubAccessToken: accessToken})
@@ -74,9 +104,11 @@
           $scope.newUser = true;
         } else {
           $scope.stripeId = resp.data.StripeCustomerID;
-          // TODO plans payment source
+          $scope.data.subbedPlans = resp.data.Plans;
+          $scope.data.paymentSource = resp.data.PaymentSource;
+          // TODO cardinfo
+          showAvailablePlans();
         }
-
       }, function(err) {
         if(err.data.GithubAuthError) {
           window.alert("Bad github login");

@@ -20,12 +20,6 @@ const (
 	GithubUserIDMetadata   CustomerMetadata = "GithubUserID"
 )
 
-type SubPlan struct {
-	Name string
-	Cost uint64
-	Num  uint64
-}
-
 type SubscriptionRequest struct {
 	Nickname          string
 	GithubAccessToken string

@@ -29,7 +29,9 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/new", api.NewSubscription)
+	router.HandleFunc("/addSubscription", api.AddSubscription)
 	router.HandleFunc("/user", api.GetUser)
 	router.HandleFunc("/githubLogin", api.GithubLogin(githubSecretKey, githubClientId))
+	router.HandleFunc("/plans", api.GetPlans)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

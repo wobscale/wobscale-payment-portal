@@ -8,18 +8,26 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/card"
 	"github.com/stripe/stripe-go/customer"
 	"github.com/stripe/stripe-go/sub"
 	"golang.org/x/oauth2"
 )
 
-type GetUserReq struct {
+type AddSubReq struct {
+	PlanName          string
+	PlanNum           uint64
 	GithubAccessToken string
+	IdempotencyToken  string
 }
 
-func GetUser(w http.ResponseWriter, r *http.Request) {
-	var req GetUserReq
+func AddSubscription(w http.ResponseWriter, r *http.Request) {
+	serverErr := func(err string) {
+		w.WriteHeader(500)
+		out, _ := json.Marshal(apiErr{err})
+		w.Write(out)
+	}
+
+	var req AddSubReq
 	err := json.NewDecoder(r.Body).Decode(&req)
 	r.Body.Close()
 	if err != nil {
@@ -58,71 +66,60 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		c := allCustomers.Customer()
 		userid := c.Meta[string(GithubUserIDMetadata)]
 		if userid == githubUid {
-			//		userErr("You already exist; please login to manage instead")
 			thisCustomer = c
 			break
 		}
 	}
 
 	if thisCustomer == nil {
-		// Github login, no associated stripe, that's still fine, they just have to sub-up
-		resp := GetUserNewUserResp{NewUser: true, GithubUsername: *authedUser.Login}
-		respData, err := json.Marshal(resp)
-		if err != nil {
-			logrus.Error("Broken marshal: %v, %v", err, resp)
-			return
-		}
-		w.WriteHeader(200)
-		w.Write(respData)
+		// Github login, no associated stripe, that's an error
+		//userErr("Please create your stripe association first. Alternately, consistency error")
 		return
 	}
 
+	// find the existing sub for this plan if we can
 	subs := sub.List(&stripe.SubListParams{Customer: thisCustomer.ID})
+	if subs.Err() != nil {
+		serverErr("Error getting stripe subscriptions")
+		return
+	}
 
-	subPlans := []SubPlan{}
+	var existing *stripe.Sub
 	for subs.Next() {
 		sub := subs.Sub()
-		plan := SubPlan{
-			Name: sub.Plan.Name,
-			Cost: sub.Plan.Amount,
-			Num:  sub.Quantity,
+		if sub.Plan.ID == req.PlanName {
+			existing = sub
+			break
 		}
-		subPlans = append(subPlans, plan)
 	}
 
-	custCard, err := card.Get(thisCustomer.DefaultSource.ID, &stripe.CardParams{Customer: thisCustomer.ID})
+	var params *stripe.SubParams
+	var newSub *stripe.Sub
+	if existing == nil {
+		// Create a new subscription
+		params = &stripe.SubParams{
+			Plan:     req.PlanName,
+			Quantity: req.PlanNum,
+			Customer: thisCustomer.ID,
+		}
+		params.IdempotencyKey = req.IdempotencyToken
+		newSub, err = sub.New(params)
+	} else {
+		// One already exists, update the quantity
+		params = &stripe.SubParams{
+			Plan:     req.PlanName,
+			Quantity: existing.Quantity + req.PlanNum,
+			Customer: thisCustomer.ID,
+		}
+
+		newSub, err = sub.Update(existing.ID, params)
+	}
 	if err != nil {
-		//serverErr("Dificulty getting payment source")
-		// TODO
+		// Scary!
+		logrus.Errorf("Error creating a subscription: %v, %v", params, err)
+		serverErr("Something went wrong making a subscription: " + err.Error())
 		return
 	}
-
-	cardStr := custCard.Display()
-	resp := GetUserResp{
-		GithubUsername:   *authedUser.Login,
-		StripeCustomerID: thisCustomer.ID,
-		PaymentSource:    cardStr,
-		Plans:            subPlans,
-	}
-
-	respData, err := json.Marshal(resp)
-	if err != nil {
-		logrus.Error("Broken marshal: %v, %v", err, resp)
-		return
-	}
-
 	w.WriteHeader(200)
-	w.Write(respData)
-}
-
-type GetUserResp struct {
-	GithubUsername   string
-	StripeCustomerID string
-	Plans            []SubPlan
-	PaymentSource    string
-}
-
-type GetUserNewUserResp struct {
-	GithubUsername string
-	NewUser        bool
+	w.Write([]byte(`{"Ok":1,"SubscriptionID":"` + newSub.ID + `"}`))
 }

@@ -3,18 +3,34 @@
 </section>
 <div id="subinfo" ng-show="!newUser">
   <section id="subscription">
-    <p>You pay <strong>${{ totalSub() }} </strong> monthly for the following:</p>
+    <p>You pay <strong>${{ totalSub() / 100 }} </strong> monthly for the following:</p>
     <ul>
-      <li ng-repeat="plan in plans"> {{ plan.count }} &times; {{ plan.name }} at sea1 (Westin Building, Seattle): <strong>${{ plan.cost }}</strong></li>
+      <li ng-repeat="plan in data.subbedPlans"> {{ plan.Num }} &times; {{ plan.Name }} at sea1 (Westin Building, Seattle): <strong>${{ plan.Cost / 100}}</strong></li>
     </ul>
     <p>If this is wrong, email <a href="mailto:admin@wobscale.website">admin@wobscale.website</a>.</p>
   </section>
   <section id="source">
-    <p>You pay with: <strong>{{ cardInfo }} </strong> (<a href="/#0894c024-e392-4507-abdf-459f00292a3f">change payment method</a>)</p>
-    <p>Payments are charged on the 5th of each month.</p>
+    <p>You pay with: <strong>{{ data.paymentSource }} </strong> (<a href="#" ng-click="editPaymentSource = true">change payment method</a>)</p>
+
+    <div id="editPayment" ng-show="editPaymentSource">
+      TODO
+      <br>
+      <a href="#" ng-click="editPaymentSource = false">close</a>
+    </div>
+
   </section>
-  <section id="add-subscription">
+  <section id="add-subscription" ng-show="data.plans.length > 0">
     <p>You may add additional subscriptions here. Please be honest and careful!</p>
+    <form name="addSubForm">
+      <label for="addPlan">Plan: </label>
+      <select name="addPlan" ng-model="data.addPlanName">
+        <option ng-repeat="el in data.plans" value="{{ el.Name }}">{{el.Name}} - ${{el.Cost}}</option>
+      </select>
+      <label for="addPlanNum">Num: </label>
+      <input name="addPlanNum" ng-model="data.addPlanNum" type="number" min="1" max="100" value="1">
+      <br>
+      <a href="#" ng-click="addSub()">Add Subscription</a>
+    </form>
   </section>
 </div>
 <div id="newuser" ng-show="newUser">
