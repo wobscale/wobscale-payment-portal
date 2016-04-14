@@ -8,7 +8,9 @@
         <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-route.min.js"></script>
         <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
         <script type="text/javascript">
-            Stripe.setPublishableKey('pk_test_7hpzed6hEuKjgw64uTUvaolk');
+            window.githubClientId = 'ENV_GITHUB_CLIENT_ID'
+            window.ENV = 'ENV_ENVIRONMENT';
+            Stripe.setPublishableKey('ENV_STRIPE_PUBLISHABLE_KEY');
         </script>
         <script src="/js/client.js"></script>
     </head>

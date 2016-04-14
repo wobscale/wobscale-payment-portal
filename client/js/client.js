@@ -13,8 +13,8 @@
   }]);
 
   app.controller('LoginCtrl', ['$scope', '$location', '$http', function($scope, $location, $http) {
-    // config
-    $scope.githubClientId = "a978cb85f32000ce8f8e";
+    // TODO $window here and below
+    $scope.githubClientId = window.githubClientId;
 
     // Check if logged in; being logged in means that you have the 'githubAccessKey' element
     var auth = window.localStorage.getItem("githubAccessKey");
