@@ -7,7 +7,7 @@ import (
 
 	"github.com/sqs/mux"
 	"github.com/stripe/stripe-go"
-	"github.com/wobscale/stripe-subscribe-server/server/api"
+	"github.com/wobscale/wobscale-payment-portal/server/api"
 )
 
 func main() {
