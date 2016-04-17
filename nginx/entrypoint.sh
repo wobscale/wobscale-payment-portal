@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for var in ENV_API_PORT ENV_API_NAME ENV_WEB_PORT ENV_WEB_NAME; do
+for var in ENV_SERVER_NAME ENV_CLIENT_NAME ENV_API_PORT ENV_API_NAME ENV_WEB_PORT ENV_WEB_NAME; do
   # indirect reference; get the real environment variable
   # http://tldp.org/LDP/abs/html/ivr.html
   eval v=\$$var
