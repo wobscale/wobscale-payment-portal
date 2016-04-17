@@ -1,0 +1,82 @@
+{
+	"ImportPath": "github.com/wobscale/wobscale-payment-portal/server",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v62",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.10.0-14-g081307d",
+			"Rev": "081307d9bc1364753142d5962fc1d795c742baaf"
+		},
+		{
+			"ImportPath": "github.com/google/go-github/github",
+			"Rev": "f8cebc8ad645ff0e5df4ffc1059f644c3cb99b1c"
+		},
+		{
+			"ImportPath": "github.com/google/go-querystring/query",
+			"Rev": "30f7a39f4a218feb5325f3aebc60c32a572a8274"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/handlers",
+			"Comment": "v1.1-6-g66e6c6f",
+			"Rev": "66e6c6f01d8da976ee113437745ca029c2b585a6"
+		},
+		{
+			"ImportPath": "github.com/sqs/mux",
+			"Rev": "4e1a59b87c11cb7dd43421948951679eb29c4b30"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go",
+			"Comment": "v13.8.0",
+			"Rev": "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/card",
+			"Comment": "v13.8.0",
+			"Rev": "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/customer",
+			"Comment": "v13.8.0",
+			"Rev": "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/orderitem",
+			"Comment": "v13.8.0",
+			"Rev": "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/plan",
+			"Comment": "v13.8.0",
+			"Rev": "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
+		},
+		{
+			"ImportPath": "github.com/stripe/stripe-go/sub",
+			"Comment": "v13.8.0",
+			"Rev": "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "7e9cd5d59563851383f8f81a7fbb01213709387c"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/internal",
+			"Rev": "7e9cd5d59563851383f8f81a7fbb01213709387c"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "f64b50fbea64174967a8882830d621a18ee1548e"
+		}
+	]
+}

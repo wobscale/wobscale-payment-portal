@@ -1,10 +1,8 @@
 all: server-docker client-docker
 
-# TODO, this doesn't need to be phony, we can be faster and only build when changed
-# That'll help with docker's caching a lot too and speed it up even more!
 .PHONY: server
 server:
-	CGO_ENABLED=0 go build -a -installsuffix cgo -ldflags '-s' -o ./server/server ./server/server.go
+	$(MAKE) -C server server
 
 .PHONY: server-docker
 server-docker: server
