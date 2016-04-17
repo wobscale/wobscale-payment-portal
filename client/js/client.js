@@ -43,7 +43,8 @@
 
 
     $scope.login = function() {
-      $http.post("http://paypi.wobscale.website/githubLogin", {GithubCode: $scope.githubCode})
+      // TODO $window
+      $http.post(window.apiUrl + "/githubLogin", {GithubCode: $scope.githubCode})
         .then(function(resp) {
           var accessToken = resp.data.AccessToken;
           window.localStorage.setItem("githubAccessKey", accessToken);
@@ -86,7 +87,8 @@
         window.alert("Invalid plan configuration; pick a small numeric number of subscriptions");
         return;
       }
-      $http.post("http://paypi.wobscale.website/addSubscription", {
+      // TODO $window here and above
+      $http.post(window.apiUrl + "/addSubscription", {
         GithubAccessToken: accessToken,
         PlanName: $scope.data.addPlanName,
         PlanNum: $scope.data.addPlanNum,
@@ -98,7 +100,8 @@
     };
 
     var showAvailablePlans = function() {
-      $http.get("http://paypi.wobscale.website/plans").then(function(resp) {
+      // TODO $window here
+      $http.get(window.apiUrl + "/plans").then(function(resp) {
         $scope.data.plans = resp.data;
         $scope.data.addPlanName = $scope.data.plans[0].ID;
       }, function(err) {
@@ -107,7 +110,8 @@
     };
 
     var updateUserInfo = function() {
-      $http.post("http://paypi.wobscale.website/user", {GithubAccessToken: accessToken})
+      // TODO $window
+      $http.post(window.apiUrl + "/user", {GithubAccessToken: accessToken})
         .then(function(resp) {
           $scope.githubUsername = resp.data.GithubUsername;
           if(resp.data.NewUser) {
@@ -128,7 +132,7 @@
     };
 
     var createCustomer = function(token) {
-      $http.post("http://paypi.wobscale.website/new", {
+      $http.post(window.apiUrl + "/new", {
         Email: $scope.email,
         Nickname: $scope.nickname,
         GithubAccessToken: accessToken,
@@ -141,7 +145,7 @@
     };
 
     var addPayment = function(token) {
-      $http.post("http://paypi.wobscale.website/updatePayment", {
+      $http.post(window.apiUrl + "/updatePayment", {
         GithubAccessToken: accessToken,
         StripeToken: token
       }).then(function(resp) {
