@@ -72,4 +72,5 @@ dev: dev-checkenv nginx client-docker server-docker ./certs/cert.crt ./certs/cer
 	           -e ENV_WEB_NAME=127.0.0.1 \
 	           -v "$(shell pwd)/certs:/certs" \
 	           euank/wobscale-payments-nginx
-	@echo "Visit https://127.0.0.1:$(DEVPORT) for a good time :)"
+	@echo "Visit https://127.0.0.2:$(DEVPORT) and accept an ssl warning.."
+	@echo "Then visit https://127.0.0.1:$(DEVPORT) for a good time :)"
