@@ -74,3 +74,8 @@ dev: dev-checkenv nginx client-docker server-docker ./certs/cert.crt ./certs/cer
 	           euank/wobscale-payments-nginx
 	@echo "Visit https://127.0.0.2:$(DEVPORT) and accept an ssl warning.."
 	@echo "Then visit https://127.0.0.1:$(DEVPORT) for a good time :)"
+
+push:
+	docker push euank/wobscale-payments-client
+	docker push euank/wobscale-payments-nginx
+	docker push euank/wobscale-payments-server
