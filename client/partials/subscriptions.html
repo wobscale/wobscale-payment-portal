@@ -55,7 +55,7 @@
     <form name="addSubForm">
       <label for="addPlan">Plan: </label>
       <select name="addPlan" ng-model="data.addPlanName">
-        <option ng-repeat="el in data.plans" value="{{ el.ID }}">{{el.Name}} - ${{el.Cost}}</option>
+        <option ng-repeat="el in data.plans" value="{{ el.ID }}">{{el.Name}} - ${{el.Cost / 100}}</option>
       </select>
       <label for="addPlanNum">Num: </label>
       <input name="addPlanNum" ng-model="data.addPlanNum" type="number" min="1" max="100" value="1">
