@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/card"
 	"github.com/stripe/stripe-go/sub"
@@ -25,6 +24,14 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	thisCustomer, authedUser, err := getStripeAndGithubUser(req.GithubAccessToken)
 
+	if err == NoSuchCustomerErr {
+		writeHappyResp(w, GetUserNewUserResp{
+			GithubUsername: *authedUser.Login,
+			NewUser:        true,
+		})
+		return
+	}
+
 	subs := sub.List(&stripe.SubListParams{Customer: thisCustomer.ID})
 
 	subPlans := []SubPlan{}
@@ -40,8 +47,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	custCard, err := card.Get(thisCustomer.DefaultSource.ID, &stripe.CardParams{Customer: thisCustomer.ID})
 	if err != nil {
-		//serverErr("Dificulty getting payment source")
-		// TODO
+		serverErr(w, "Difficulty getting payment source")
 		return
 	}
 
@@ -53,14 +59,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		Plans:            subPlans,
 	}
 
-	respData, err := json.Marshal(resp)
-	if err != nil {
-		logrus.Error("Broken marshal: %v, %v", err, resp)
-		return
-	}
-
-	w.WriteHeader(200)
-	w.Write(respData)
+	writeHappyResp(w, resp)
 }
 
 type GetUserResp struct {

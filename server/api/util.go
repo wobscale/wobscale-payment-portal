@@ -17,6 +17,8 @@ type apiErr struct {
 	Error string
 }
 
+var NoSuchCustomerErr = errors.New("No such customer")
+
 func userErr(w http.ResponseWriter, err string) {
 	w.WriteHeader(400)
 	out, _ := json.Marshal(apiErr{err})
@@ -73,7 +75,7 @@ func _stripeUser(githubUser *github.User) (*stripe.Customer, error) {
 	}
 
 	if thisCustomer == nil {
-		return nil, errors.New("No such customer")
+		return nil, NoSuchCustomerErr
 	}
 	return thisCustomer, nil
 }
@@ -85,4 +87,14 @@ func getStripeAndGithubUser(githubToken string) (*stripe.Customer, *github.User,
 	}
 	stripeUser, err := _stripeUser(ghub)
 	return stripeUser, ghub, err
+}
+
+func writeHappyResp(w http.ResponseWriter, data interface{}) {
+	w.WriteHeader(200)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logrus.Errorf("Error marshalling response: %v", err)
+		// TODO, this doesn't work does it?
+		w.WriteHeader(500)
+	}
 }
