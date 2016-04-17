@@ -158,6 +158,10 @@
 
     $scope.addDefaultPayment = function() {
       window.Stripe.card.createToken(document.querySelector("#add-payment-form"), function(status, resp) {
+        if(resp.error) {
+          alert("Stripe error: " + resp.error.message);
+          return;
+        }
         var customerToken = resp.id;
         addPayment(customerToken);
       });
@@ -165,6 +169,10 @@
 
     $scope.createPayment = function() {
       window.Stripe.card.createToken(document.querySelector("#payment-form"), function(status, resp) {
+        if(resp.error) {
+          alert("Stripe error: " + resp.error.message);
+          return;
+        }
         var customerToken = resp.id;
         createCustomer(customerToken);
       });
