@@ -36,7 +36,7 @@ ifndef STRIPE_PUBLISHABLE_KEY
 	$(error STRIPE_PUBLISHABLE_KEY required)
 endif
 
-./certs/cert.key ./cert/cert.crt:
+./certs/cert.key ./certs/cert.crt:
 	mkdir -p certs
 	openssl req -subj '/CN=127.0.0.1:$(DEVPORT)/O=wobscale/C=US/subjectAltName=127.0.0.2:$(DEVPORT)' \
 		-new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 \
