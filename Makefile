@@ -36,17 +36,20 @@ ifndef STRIPE_PUBLISHABLE_KEY
 	$(error STRIPE_PUBLISHABLE_KEY required)
 endif
 
-./certs/cert.key ./certs/cert.crt:
+./certs/ssl.key ./certs/ssl.pem:
 	mkdir -p certs
 	openssl req -subj '/CN=127.0.0.1:$(DEVPORT)/O=wobscale/C=US/subjectAltName=127.0.0.2:$(DEVPORT)' \
 		-new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 \
-		-keyout certs/cert.key -out certs/cert.crt
+		-keyout certs/ssl.key -out certs/ssl.pem
 
 ./certs/dhparam.pem:
 	openssl dhparam -out ./certs/dhparam.pem 2048
 
+.PHONY: certs
+certs: ./certs/dhparam.pem ./certs/ssl.key ./certs/ssl.pem
+
 .PHONY: dev
-dev: dev-checkenv nginx client-docker server-docker ./certs/cert.crt ./certs/cert.key ./certs/dhparam.pem
+dev: dev-checkenv nginx client-docker server-docker certs
 	-docker network create wobscale-payments
 	-docker rm --force "wobscale-payments-server"
 	-docker rm --force "wobscale-payments-client"
@@ -70,6 +73,8 @@ dev: dev-checkenv nginx client-docker server-docker ./certs/cert.crt ./certs/cer
 	           -e ENV_WEB_PORT=443 \
 	           -e ENV_API_NAME=127.0.0.2 \
 	           -e ENV_WEB_NAME=127.0.0.1 \
+	           -e ENV_CLIENT_NAME=wobscale-payments-client \
+	           -e ENV_SERVER_NAME=wobscale-payments-server \
 	           -v "$(shell pwd)/certs:/certs" \
 	           euank/wobscale-payments-nginx
 	@echo "Visit https://127.0.0.2:$(DEVPORT) and accept an ssl warning.."
