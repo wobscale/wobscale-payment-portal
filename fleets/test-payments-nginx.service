@@ -1,0 +1,21 @@
+[Unit]
+Description=unit for the test nginx server, listens on 10443
+After=docker.service test-payments-ssl.service test-payment-client.service test-payment-server.service
+Requires=docker.service test-payments-ssl.service test-payment-client.service test-payment-server.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker rm --force test-payments-nginx
+ExecStartPre=/usr/bin/docker pull euank/wobscale-payments-nginx
+ExecStart=/usr/bin/docker run --name test-payments-nginx \
+    --net=test-wobscale-payments \
+    -p 10443:443 \
+    -e ENV_API_PORT=443 -e ENV_WEB_PORT=443 \
+    -e ENV_API_NAME=paypi.test.wobscale.website \
+    -e ENV_WEB_NAME=pay.test.wobscale.website \
+    -e ENV_CLIENT_NAME=test-payments-client \
+    -e ENV_SERVER_NAME=test-payments-server \
+    -v /var/certs/test.payments/certs:/certs \
+    euank/wobscale-payments-nginx
+ExecStop=/usr/bin/docker kill test-payments-nginx
+Restart=always

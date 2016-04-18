@@ -1,0 +1,17 @@
+[Unit]
+Description=TestCertUnit
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker rm --force test-payments-certs
+ExecStartPre=/usr/bin/docker pull euank/r53-lets-encrypt
+ExecStart=/usr/bin/docker run --name test-payments-certs \
+          -e LE_EMAIL=admin@wobscale.website \
+          -e DOMAINS="pay.test.wobscale.website paypi.test.wobscale.website" \
+          -v /var/certs/test.payments/all/:/le/certs/ \
+          -v /var/certs/test.payments/certs:/certs \
+          -v /var/certs/test.payments/secret:/le-secrets \
+          euank/r53-lets-encrypt
+ExecStop=/usr/bin/docker kill test-payments-certs
