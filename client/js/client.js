@@ -57,7 +57,7 @@
   }]);
 
 
-  app.controller('SubscriptionsCtrl', ['$scope', '$location', '$http', function($scope, $location, $http) {
+  app.controller('SubscriptionsCtrl', ['$scope', '$location', '$http', '$q', function($scope, $location, $http, $q) {
     var accessToken;
 
     var initialize = function() {
@@ -69,13 +69,28 @@
       $scope.data.plans = [];
       $scope.data.subbedPlans = [];
       $scope.data.addPlanNum = 1;
+      $scope.data.loading = true;
       $scope.data.addPlanName = "loading...";
       $scope.data.paymentSource = "";
 
-      updateUserInfo();
-      showAvailablePlans();
-      // TODO, promises for both of those, and handle loading out here
-      //.then($scope.data.loading = false)
+      $q.all([updateUserInfo(), showAvailablePlans()])
+      .then(function() {
+        $scope.data.creatingPayment = false;
+        $scope.data.addingSub = false;
+        $scope.data.loading = false;
+      }, function(err) {
+        window.alert("Error loading page data: ", err);
+      });
+    };
+
+    var reinitialize = function() {
+      $q.all([updateUserInfo(), showAvailablePlans()])
+      .then(function() {
+        $scope.data.creatingPayment = false;
+        $scope.data.addingSub = false;
+      }, function(err) {
+        window.alert("Error loading page data: ", err);
+      });
     };
 
     $scope.totalSub = function() {
@@ -83,8 +98,13 @@
     };
 
     $scope.addSub = function() {
+      if($scope.data.addingSub) {
+        return;
+      }
+      $scope.data.addingSub = true;
       if($scope.data.addPlanNum < 1 || $scope.data.addPlanNum > 100) {
         window.alert("Invalid plan configuration; pick a small numeric number of subscriptions");
+        $scope.data.addingSub = false;
         return;
       }
       // TODO $window here and above
@@ -93,15 +113,16 @@
         PlanName: $scope.data.addPlanName,
         PlanNum: $scope.data.addPlanNum,
       }).then(function(resp) {
-        initialize();
+        reinitialize();
       }, function(err) {
         alert("Plan adding failed: " + JSON.stringify(err));
+        $scope.data.addingSub = false;
       });
     };
 
     var showAvailablePlans = function() {
       // TODO $window here
-      $http.get(window.apiUrl + "/plans").then(function(resp) {
+      return $http.get(window.apiUrl + "/plans").then(function(resp) {
         $scope.data.plans = resp.data;
         $scope.data.addPlanName = $scope.data.plans[0].ID;
       }, function(err) {
@@ -111,7 +132,7 @@
 
     var updateUserInfo = function() {
       // TODO $window
-      $http.post(window.apiUrl + "/user", {GithubAccessToken: accessToken})
+      return $http.post(window.apiUrl + "/user", {GithubAccessToken: accessToken})
         .then(function(resp) {
           $scope.githubUsername = resp.data.GithubUsername;
           if(resp.data.NewUser) {
@@ -138,9 +159,10 @@
         GithubAccessToken: accessToken,
         StripeToken: token
       }).then(function(resp) {
-        initialize();
+        reinitialize();
       }, function(err) {
         alert(JSON.stringify(err));
+        $scope.data.creatingPayment = false;
       });
     };
 
@@ -150,7 +172,7 @@
         StripeToken: token
       }).then(function(resp) {
         $scope.editPaymentSource = false;
-        initialize();
+        reinitialize();
       }, function(err) {
         alert(JSON.stringify(err));
       });
@@ -168,9 +190,14 @@
     };
 
     $scope.createPayment = function() {
+      if($scope.data.creatingPayment) {
+        return;
+      }
+      $scope.data.creatingPayment = true;
       window.Stripe.card.createToken(document.querySelector("#payment-form"), function(status, resp) {
         if(resp.error) {
           alert("Stripe error: " + resp.error.message);
+          $scope.data.creatingPayment = false;
           return;
         }
         var customerToken = resp.id;

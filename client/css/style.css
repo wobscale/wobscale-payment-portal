@@ -27,3 +27,7 @@ footer {
   color: #444;
 }
 
+a.disabled {
+   pointer-events: none;
+   cursor: default;
+ }
