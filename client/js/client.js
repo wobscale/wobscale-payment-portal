@@ -71,6 +71,8 @@
       $scope.data.addPlanNum = 1;
       $scope.data.addPlanName = "loading...";
       $scope.data.paymentSource = "";
+      $scope.data.creatingPayment = false;
+      $scope.data.addingSub = false;
 
       updateUserInfo();
       showAvailablePlans();
@@ -83,8 +85,13 @@
     };
 
     $scope.addSub = function() {
+      if($scope.data.addingSub) {
+        return;
+      }
+      $scope.data.addingSub = true;
       if($scope.data.addPlanNum < 1 || $scope.data.addPlanNum > 100) {
         window.alert("Invalid plan configuration; pick a small numeric number of subscriptions");
+        $scope.data.addingSub = false;
         return;
       }
       // TODO $window here and above
@@ -96,6 +103,7 @@
         initialize();
       }, function(err) {
         alert("Plan adding failed: " + JSON.stringify(err));
+        $scope.data.addingSub = false;
       });
     };
 
@@ -141,6 +149,7 @@
         initialize();
       }, function(err) {
         alert(JSON.stringify(err));
+        $scope.data.creatingPayment = false;
       });
     };
 
@@ -168,9 +177,14 @@
     };
 
     $scope.createPayment = function() {
+      if($scope.data.creatingPayment) {
+        return;
+      }
+      $scope.data.creatingPayment = true;
       window.Stripe.card.createToken(document.querySelector("#payment-form"), function(status, resp) {
         if(resp.error) {
           alert("Stripe error: " + resp.error.message);
+          $scope.data.creatingPayment = false;
           return;
         }
         var customerToken = resp.id;

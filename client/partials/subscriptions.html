@@ -60,7 +60,7 @@
       <label for="addPlanNum">Num: </label>
       <input name="addPlanNum" ng-model="data.addPlanNum" type="number" min="1" max="100" value="1">
       <br>
-      <a href="#" ng-click="addSub()">Add Subscription</a> <b>(This will charge your card immediately)</b>
+      <a ng-href="{{ data.addingSub ? '' : '#' }}" ng-disabled="data.addingSub" ng-click="addSub()">Add Subscription</a> <b>(This will charge your card immediately)</b>
     </form>
   </section>
 </div>
@@ -109,7 +109,7 @@
       <input type="text" size="4" data-stripe="exp-year"/>
     </div>
 
-    <a href="#" ng-click="createPayment()">Create Payment Account</button>
+    <a ng-href="{{data.creatingPayment ? '' : '#' }}" ng-disabled="data.creatingPayment" ng-click="createPayment()">Create Payment Account</button>
   </form>
 </div>
 
