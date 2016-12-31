@@ -2,7 +2,7 @@
 # That'll help with docker's caching a lot too and speed it up even more!
 .PHONY: server
 server:
-	docker run --rm -v "$(shell pwd):/go/src/github.com/wobscale/wobscale-payment-portal/server" --workdir=/go/src/github.com/wobscale/wobscale-payment-portal/server golang:1.6 make static
+	docker run --rm -v "$(shell pwd):/go/src/github.com/wobscale/wobscale-payment-portal/server" --workdir=/go/src/github.com/wobscale/wobscale-payment-portal/server golang:1.7 make static
 
 .PHONY: static
 static:
