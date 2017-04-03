@@ -8,21 +8,9 @@ This is a stripe api client to let a user subscribe to wobscale services, namely
 
 Before deploying, make sure your stripe plans exist and are as desired.
 
-Launch a recent CoreOS machine (`899.15.0` at the time of writing).
-Make sure the `fleet` and `etcd2` services are enabled and running.
+Then create a Kubernetes (some assembly required).
 
-Setup the `config` file referenced in the fleet units.
-
-Run the following:
-```
-fleetctl load fleets/*.service
-fleetctl start payments-ssl.service
-# Get a coffee, takes a while for certs to arrive
-fleetctl start payments-nginx.service
-```
-
-Out of band, you should create the needed DNS records and make sure it all looks okay.
-Also, the referenced config files need to exist somehow. Good luck.
+Finally, use kubectl to create resources similar to [these](https://github.com/euank/ek8s/tree/master/wobscale-paypi).
 
 ## TODO
 
@@ -39,7 +27,4 @@ Also, the referenced config files need to exist somehow. Good luck.
 
 
 ### Deployment
-* Reload certs after an update (sighup nginx)
 * route53 presence registration
-* not use fleet, k8 or such instead
-
