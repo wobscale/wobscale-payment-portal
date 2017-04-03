@@ -40,6 +40,10 @@ func main() {
 		return api.WithCorsHeaders(origin, f.ServeHTTP)
 	}
 
+	router.HandleFunc("/ping", func(rw http.ResponseWriter, req *http.Request) {
+		rw.Write([]byte("pong"))
+		rw.WriteHeader(200)
+	})
 	router.HandleFunc("/new", api.NewSubscription)
 	router.HandleFunc("/updatePayment", api.UpdatePayment)
 	router.HandleFunc("/addSubscription", api.AddSubscription)
