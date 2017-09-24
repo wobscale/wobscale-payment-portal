@@ -9,5 +9,12 @@ static:
 	CGO_ENABLED=0 go build -a -installsuffix cgo -ldflags '-s' -o server server.go
 
 .PHONY: server-docker
-server-docker: server
+server-docker: server ./files/cacert.pem
 	docker build -t euank/wobscale-payments-server -f ./server/Dockerfile ./server
+
+# cacert.pem is checked in for our static dockerfile because downloading of
+# them on e.g. travis breaks due to curl.haxx.se doing heavy rate-limiting of
+# the file.
+# It's nicer to them to just 
+./files/cacert.pem:
+	wget -O files/cacert.pem https://curl.haxx.se/ca/cacert.pem
