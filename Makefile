@@ -43,6 +43,7 @@ endif
 		-keyout certs/ssl.key -out certs/ssl.pem
 
 ./certs/dhparam.pem:
+	mkdir -p certs
 	openssl dhparam -out ./certs/dhparam.pem 2048
 
 .PHONY: certs
