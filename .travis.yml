@@ -1,0 +1,12 @@
+services:
+- docker
+language: go
+
+branches:
+  only:
+  - master
+  - dev
+
+script:
+- make
+
