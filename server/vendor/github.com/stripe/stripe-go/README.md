@@ -1,4 +1,8 @@
-# Go Stripe [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/stripe/stripe-go) [![Build Status](https://travis-ci.org/stripe/stripe-go.svg?branch=master)](https://travis-ci.org/stripe/stripe-go)
+# Go Stripe
+
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/stripe/stripe-go)
+[![Build Status](https://travis-ci.org/stripe/stripe-go.svg?branch=master)](https://travis-ci.org/stripe/stripe-go)
+[![Coverage Status](https://coveralls.io/repos/github/stripe/stripe-go/badge.svg?branch=master)](https://coveralls.io/github/stripe/stripe-go?branch=master)
 
 ## Summary
 
@@ -46,16 +50,11 @@ Below are a few simple examples:
 
 ```go
 params := &stripe.CustomerParams{
-	Balance: -123,
-	Desc:  "Stripe Developer",
-	Email: "gostripe@stripe.com",
+	Balance:     stripe.Int64(-123),
+	Description: stripe.String("Stripe Developer"),
+	Email:       stripe.String("gostripe@stripe.com"),
 }
-params.SetSource(&stripe.CardParams{
-	Name:   "Go Stripe",
-	Number: "378282246310005",
-	Month:  "06",
-	Year:   "15",
-})
+params.SetSource("tok_1234")
 
 customer, err := customer.New(params)
 ```
@@ -63,7 +62,7 @@ customer, err := customer.New(params)
 ### Charges
 
 ```go
-params := &stripe.ChargeListParams{Customer: customer.ID}
+params := &stripe.ChargeListParams{Customer: stripe.String(customer.ID)}
 params.Filters.AddFilter("include[]", "", "total_count")
 
 // set this so you can easily retry your request in case of a timeout
@@ -71,11 +70,11 @@ params.Params.IdempotencyKey = stripe.NewIdempotencyKey()
 
 i := charge.List(params)
 for i.Next() {
-  charge := i.Charge()
+	charge := i.Charge()
 }
 
 if err := i.Err(); err != nil {
-  // handle
+	// handle
 }
 ```
 
@@ -84,13 +83,13 @@ if err := i.Err(); err != nil {
 ```go
 i := event.List(nil)
 for i.Next() {
-  e := i.Event()
+	e := i.Event()
 
-  // access event data via e.GetObjValue("resource_name_based_on_type", "resource_property_name")
-  // alternatively you can access values via e.Data.Obj["resource_name_based_on_type"].(map[string]interface{})["resource_property_name"]
+	// access event data via e.GetObjectValue("resource_name_based_on_type", "resource_property_name")
+	// alternatively you can access values via e.Data.Object["resource_name_based_on_type"].(map[string]interface{})["resource_property_name"]
 
-  // access previous attributes via e.GetPrevValue("resource_name_based_on_type", "resource_property_name")
-  // alternatively you can access values via e.Data.Prev["resource_name_based_on_type"].(map[string]interface{})["resource_property_name"]
+	// access previous attributes via e.GetPreviousValue("resource_name_based_on_type", "resource_property_name")
+	// alternatively you can access values via e.Data.PrevPreviousAttributes["resource_name_based_on_type"].(map[string]interface{})["resource_property_name"]
 }
 ```
 
@@ -104,17 +103,19 @@ of a connected account, one that uses the `Stripe-Account` header containing an
 account's ID, and one that uses the account's keys. Usually the former is the
 recommended approach. [See the documentation for more information][connect].
 
-To use the `Stripe-Account` approach, pass the `StripeAccount` field to a
-`ListParams` or `Params` class. For example:
+To use the `Stripe-Account` approach, use `SetStripeAccount()` on a `ListParams`
+or `Params` class. For example:
 
 ```go
 // For a list request
-listParams := &stripe.ChargeListParams{StripeAccount: merchantID}
+listParams := &stripe.ChargeListParams{}
+listParams.SetStripeAccount("acct_123")
 ```
 
 ```go
 // For any other kind of request
-params := &stripe.CustomerParams{StripeAccount: merchantID}
+params := &stripe.CustomerParams{}
+params.SetStripeAccount("acct_123")
 ```
 
 To use a key, pass it to `API`'s `Init` function:
@@ -122,8 +123,8 @@ To use a key, pass it to `API`'s `Init` function:
 ```go
 
 import (
-  "github.com/stripe/stripe-go"
-  "github.com/stripe/stripe-go/client"
+	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/client"
 )
 
 stripe := &client.API{}
@@ -138,23 +139,33 @@ available. Here's a sample handler:
 
 ```go
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
 
-    "appengine"
-    "appengine/urlfetch"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/urlfetch"
 
-    "github.com/stripe/stripe-go"
-    "github.com/stripe/stripe-go/client"
+	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/client"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-    c := appengine.NewContext(r)
-    httpClient := urlfetch.Client(c)
+        c := appengine.NewContext(r)
+        httpClient := urlfetch.Client(c)
 
-    sc := client.New("sk_live_key", stripe.NewBackends(httpClient))
+        sc := stripeClient.New("sk_live_key", stripe.NewBackends(httpClient))
 
-    fmt.Fprintf(w, "Ready to make calls to the Stripe API")
+        chargeParams := &stripe.ChargeParams{
+            Amount:      stripe.Int64(2000),
+            Currency:    stripe.String(string(stripe.CurrencyUSD)),
+            Description: stripe.String("Charge from Google App Engine"),
+        }
+        chargeParams.SetSource("tok_amex") // obtained with Stripe.js
+        charge, err := sc.Charges.New(chargeParams)
+        if err != nil {
+            fmt.Fprintf(w, "Could not process payment: %v", err)
+        }
+        fmt.Fprintf(w, "Completed payment: %v", charge.ID)
 }
 ```
 
@@ -171,8 +182,8 @@ client.
 
 ```go
 import (
-  "github.com/stripe/stripe-go"
-  "github.com/stripe/stripe-go/$resource$"
+	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/$resource$"
 )
 
 // Setup
@@ -190,16 +201,16 @@ $resource$, err := $resource$.Get(id, stripe.$Resource$Params)
 $resource$, err := $resource$.Update(stripe.$Resource$Params)
 
 // Delete
-err := $resource$.Del(id)
+resourceDeleted, err := $resource$.Del(id, stripe.$Resource$Params)
 
 // List
 i := $resource$.List(stripe.$Resource$ListParams)
 for i.Next() {
-  $resource$ := i.$Resource$()
+	$resource$ := i.$Resource$()
 }
 
 if err := i.Err(); err != nil {
-  // handle
+	// handle
 }
 ```
 
@@ -211,8 +222,8 @@ individual key.
 
 ```go
 import (
-  "github.com/stripe/stripe-go"
-  "github.com/stripe/stripe-go/client"
+	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/client"
 )
 
 // Setup
@@ -229,18 +240,35 @@ $resource$, err := sc.$Resource$s.Get(id, stripe.$Resource$Params)
 $resource$, err := sc.$Resource$s.Update(stripe.$Resource$Params)
 
 // Delete
-err := sc.$Resource$s.Del(id)
+resourceDeleted, err := sc.$Resource$s.Del(id, stripe.$Resource$Params)
 
 // List
 i := sc.$Resource$s.List(stripe.$Resource$ListParams)
 for i.Next() {
-  resource := i.$Resource$()
+	resource := i.$Resource$()
 }
 
 if err := i.Err(); err != nil {
-  // handle
+	// handle
 }
 ```
+
+### Writing a Plugin
+
+If you're writing a plugin that uses the library, we'd appreciate it if you
+identified using `stripe.SetAppInfo`:
+
+```go
+stripe.SetAppInfo(&stripe.AppInfo{
+    Name:    "MyAwesomePlugin",
+    URL:     "https://myawesomeplugin.info",
+    Version: "1.2.34",
+})
+```
+
+This information is passed along when the library makes calls to the Stripe
+API. Note that while `Name` is always required, `URL` and `Version` are
+optional.
 
 ## Development
 
@@ -253,27 +281,28 @@ the following guidelines in mind:
 
 ## Test
 
-For running additional tests, follow the steps below:
+The test suite needs testify's `require` package to run:
 
-Set the `STRIPE_KEY` environment variable to match your test private key, then
-run `make test`:
+    github.com/stretchr/testify/require
 
-```sh
-STRIPE_KEY=YOUR_API_KEY make test
-```
+It also depends on [stripe-mock], so make sure to fetch and run it from a
+background terminal ([stripe-mock's README][stripe-mock] also contains
+instructions for installing via Homebrew and other methods):
 
-Or to run tests for a particular subpackage:
+    go get -u github.com/stripe/stripe-mock
+    stripe-mock
 
-```sh
-STRIPE_KEY=YOUR_API_KEY go test ./invoice
-```
+Run all tests:
 
-Or to run a particular test (it's worth noting however that Go will report a
-success even if the referenced test doesn't exist):
+    go test ./...
 
-```sh
-STRIPE_KEY=YOUR_API_KEY go test -run "TestAllInvoicesScenarios" ./invoice
-```
+Run tests for one package:
+
+    go test ./invoice
+
+Run a single test:
+
+    go test ./invoice -run TestInvoiceGet
 
 For any requests, bug or comments, please [open an issue][issues] or [submit a
 pull request][pulls].
@@ -286,3 +315,7 @@ pull request][pulls].
 [package-management]: https://code.google.com/p/go-wiki/wiki/PackageManagementTools
 [pulls]: https://github.com/stripe/stripe-go/pulls
 [stripe]: https://stripe.com
+
+<!--
+# vim: set tw=79:
+-->

@@ -2,10 +2,10 @@
 package customer
 
 import (
-	"net/url"
-	"strconv"
+	"net/http"
 
 	stripe "github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/form"
 )
 
 // Client is used to invoke /customers APIs.
@@ -21,55 +21,8 @@ func New(params *stripe.CustomerParams) (*stripe.Customer, error) {
 }
 
 func (c Client) New(params *stripe.CustomerParams) (*stripe.Customer, error) {
-	var body *url.Values
-	var commonParams *stripe.Params
-
-	if params != nil {
-		body = &url.Values{}
-		if params.Balance != 0 {
-			body.Add("account_balance", strconv.FormatInt(params.Balance, 10))
-		}
-
-		if params.Source != nil {
-			params.Source.AppendDetails(body, true)
-		}
-
-		if len(params.Desc) > 0 {
-			body.Add("description", params.Desc)
-		}
-
-		if len(params.Coupon) > 0 {
-			body.Add("coupon", params.Coupon)
-		}
-
-		if len(params.Email) > 0 {
-			body.Add("email", params.Email)
-		}
-
-		if len(params.Plan) > 0 {
-			body.Add("plan", params.Plan)
-
-			if params.Quantity > 0 {
-				body.Add("quantity", strconv.FormatUint(params.Quantity, 10))
-			}
-
-			if params.TrialEnd > 0 {
-				body.Add("trial_end", strconv.FormatInt(params.TrialEnd, 10))
-			}
-		}
-
-		if params.Shipping != nil {
-			params.Shipping.AppendDetails(body)
-		}
-
-		commonParams = &params.Params
-
-		params.AppendTo(body)
-	}
-
 	cust := &stripe.Customer{}
-	err := c.B.Call("POST", "/customers", c.Key, body, commonParams, cust)
-
+	err := c.B.Call(http.MethodPost, "/customers", c.Key, params, cust)
 	return cust, err
 }
 
@@ -80,18 +33,9 @@ func Get(id string, params *stripe.CustomerParams) (*stripe.Customer, error) {
 }
 
 func (c Client) Get(id string, params *stripe.CustomerParams) (*stripe.Customer, error) {
-	var body *url.Values
-	var commonParams *stripe.Params
-
-	if params != nil {
-		body = &url.Values{}
-		commonParams = &params.Params
-		params.AppendTo(body)
-	}
-
+	path := stripe.FormatURLPath("/customers/%s", id)
 	cust := &stripe.Customer{}
-	err := c.B.Call("GET", "/customers/"+id, c.Key, body, commonParams, cust)
-
+	err := c.B.Call(http.MethodGet, path, c.Key, params, cust)
 	return cust, err
 }
 
@@ -102,59 +46,22 @@ func Update(id string, params *stripe.CustomerParams) (*stripe.Customer, error) 
 }
 
 func (c Client) Update(id string, params *stripe.CustomerParams) (*stripe.Customer, error) {
-	var body *url.Values
-	var commonParams *stripe.Params
-
-	if params != nil {
-		commonParams = &params.Params
-		body = &url.Values{}
-
-		if params.Balance != 0 {
-			body.Add("account_balance", strconv.FormatInt(params.Balance, 10))
-		}
-
-		if params.Source != nil {
-			params.Source.AppendDetails(body, true)
-		}
-
-		if len(params.Desc) > 0 {
-			body.Add("description", params.Desc)
-		}
-
-		if len(params.Coupon) > 0 {
-			body.Add("coupon", params.Coupon)
-		}
-
-		if len(params.Email) > 0 {
-			body.Add("email", params.Email)
-		}
-
-		if len(params.DefaultSource) > 0 {
-			body.Add("default_source", params.DefaultSource)
-		}
-		params.AppendTo(body)
-
-		if params.Shipping != nil {
-			params.Shipping.AppendDetails(body)
-		}
-	}
-
+	path := stripe.FormatURLPath("/customers/%s", id)
 	cust := &stripe.Customer{}
-	err := c.B.Call("POST", "/customers/"+id, c.Key, body, commonParams, cust)
-
+	err := c.B.Call(http.MethodPost, path, c.Key, params, cust)
 	return cust, err
 }
 
 // Del removes a customer.
 // For more details see https://stripe.com/docs/api#delete_customer.
-func Del(id string) (*stripe.Customer, error) {
-	return getC().Del(id)
+func Del(id string, params *stripe.CustomerParams) (*stripe.Customer, error) {
+	return getC().Del(id, params)
 }
 
-func (c Client) Del(id string) (*stripe.Customer, error) {
+func (c Client) Del(id string, params *stripe.CustomerParams) (*stripe.Customer, error) {
+	path := stripe.FormatURLPath("/customers/%s", id)
 	cust := &stripe.Customer{}
-	err := c.B.Call("DELETE", "/customers/"+id, c.Key, nil, nil, cust)
-
+	err := c.B.Call(http.MethodDelete, path, c.Key, params, cust)
 	return cust, err
 }
 
@@ -164,34 +71,13 @@ func List(params *stripe.CustomerListParams) *Iter {
 	return getC().List(params)
 }
 
-func (c Client) List(params *stripe.CustomerListParams) *Iter {
-	type customerList struct {
-		stripe.ListMeta
-		Values []*stripe.Customer `json:"data"`
-	}
+func (c Client) List(listParams *stripe.CustomerListParams) *Iter {
+	return &Iter{stripe.GetIter(listParams, func(p *stripe.Params, b *form.Values) ([]interface{}, stripe.ListMeta, error) {
+		list := &stripe.CustomerList{}
+		err := c.B.CallRaw(http.MethodGet, "/customers", c.Key, b, p, list)
 
-	var body *url.Values
-	var lp *stripe.ListParams
-	var p *stripe.Params
-
-	if params != nil {
-		body = &url.Values{}
-
-		if params.Created > 0 {
-			body.Add("created", strconv.FormatInt(params.Created, 10))
-		}
-
-		params.AppendTo(body)
-		lp = &params.ListParams
-		p = params.ToParams()
-	}
-
-	return &Iter{stripe.GetIter(lp, body, func(b url.Values) ([]interface{}, stripe.ListMeta, error) {
-		list := &customerList{}
-		err := c.B.Call("GET", "/customers", c.Key, &b, p, list)
-
-		ret := make([]interface{}, len(list.Values))
-		for i, v := range list.Values {
+		ret := make([]interface{}, len(list.Data))
+		for i, v := range list.Data {
 			ret[i] = v
 		}
 

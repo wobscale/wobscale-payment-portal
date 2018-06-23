@@ -45,12 +45,13 @@
     ".",
     "card",
     "customer",
-    "orderitem",
+    "form",
     "plan",
+    "product",
     "sub"
   ]
-  revision = "afb0a7e2d332a42339fecda82c73e6cb189f91f6"
-  version = "v13.8.0"
+  revision = "380d6e0b435802e78bdf3e27a4de8a07da3d5f95"
+  version = "v35.5.0"
 
 [[projects]]
   name = "golang.org/x/net"
@@ -87,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0a56da5aca83e30b09583ddfb61be3f4e4c44f6131a4e0d913a1172dec4f8be3"
+  inputs-digest = "6d9d3abef735779c03812dce1e6fb45a1f3314c50a9188c0975c5dbc8c9c4394"
   solver-name = "gps-cdcl"
   solver-version = 1

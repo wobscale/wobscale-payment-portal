@@ -2,99 +2,168 @@ package stripe
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/url"
+	"strconv"
+
+	"github.com/stripe/stripe-go/form"
 )
 
 // BankAccountStatus is the list of allowed values for the bank account's status.
-// Allowed values are "new", "verified", "validated", "errored".
 type BankAccountStatus string
 
-// BankAccountParams is the set of parameters that can be used when creating or updating a bank account.
+const (
+	BankAccountStatusErrored            BankAccountStatus = "errored"
+	BankAccountStatusNew                BankAccountStatus = "new"
+	BankAccountStatusValidated          BankAccountStatus = "validated"
+	BankAccountStatusVerificationFailed BankAccountStatus = "verification_failed"
+	BankAccountStatusVerified           BankAccountStatus = "verified"
+)
+
+// BankAccountAccountHolderType is the list of allowed values for the bank account holder type.
+type BankAccountAccountHolderType string
+
+const (
+	BankAccountAccountHolderTypeCompany    BankAccountAccountHolderType = "company"
+	BankAccountAccountHolderTypeIndividual BankAccountAccountHolderType = "individual"
+)
+
+// BankAccountParams is the set of parameters that can be used when updating a
+// bank account.
+//
+// Note that while form annotations are used for updates, bank accounts have
+// some unusual logic on creates that necessitates manual handling of all
+// parameters. See AppendToAsSourceOrExternalAccount.
 type BankAccountParams struct {
-	Params
+	Params `form:"*"`
 
-	// The identifier of the parent account under which bank accounts are
-	// nested.
-	AccountID string
+	// Account is the identifier of the parent account under which bank
+	// accounts are nested.
+	Account *string `form:"-"`
 
-	// A token referencing an external account like one returned from
+	AccountHolderName  *string `form:"account_holder_name"`
+	AccountHolderType  *string `form:"account_holder_type"`
+	AccountNumber      *string `form:"account_number"`
+	Country            *string `form:"country"`
+	Currency           *string `form:"currency"`
+	Customer           *string `form:"-"`
+	DefaultForCurrency *bool   `form:"default_for_currency"`
+	RoutingNumber      *string `form:"routing_number"`
+
+	// Token is a token referencing an external account like one returned from
 	// Stripe.js.
-	Token string
+	Token *string `form:"-"`
 
-	// Information on an external account to reference. Only used if `Token`
-	// is not provided.
-	Account, AccountHolderName, AccountHolderType, Country, Currency, Routing string
+	// ID is used when tokenizing a bank account for shared customers
+	ID *string `form:"*"`
+}
 
-	Default  bool
-	Customer string
+// AppendToAsSourceOrExternalAccount appends the given BankAccountParams as
+// either a source or external account.
+//
+// It may look like an AppendTo from the form package, but it's not, and is
+// only used in the special case where we use `bankaccount.New`. It's needed
+// because we have some weird encoding logic here that can't be handled by the
+// form package (and it's special enough that it wouldn't be desirable to have
+// it do so).
+//
+// This is not a pattern that we want to push forward, and this largely exists
+// because the bank accounts endpoint is a little unusual. There is one other
+// resource like it, which is cards.
+func (a *BankAccountParams) AppendToAsSourceOrExternalAccount(body *form.Values) {
+	isCustomer := a.Customer != nil
+
+	var sourceType string
+	if isCustomer {
+		sourceType = "source"
+	} else {
+		sourceType = "external_account"
+	}
+
+	// Use token (if exists) or a dictionary containing a user’s bank account details.
+	if a.Token != nil {
+		body.Add(sourceType, StringValue(a.Token))
+
+		if a.DefaultForCurrency != nil {
+			body.Add("default_for_currency", strconv.FormatBool(BoolValue(a.DefaultForCurrency)))
+		}
+	} else {
+		body.Add(sourceType+"[object]", "bank_account")
+		body.Add(sourceType+"[country]", StringValue(a.Country))
+		body.Add(sourceType+"[account_number]", StringValue(a.AccountNumber))
+		body.Add(sourceType+"[currency]", StringValue(a.Currency))
+
+		// These are optional and the API will fail if we try to send empty
+		// values in for them, so make sure to check that they're actually set
+		// before encoding them.
+		if a.AccountHolderName != nil {
+			body.Add(sourceType+"[account_holder_name]", StringValue(a.AccountHolderName))
+		}
+
+		if a.AccountHolderType != nil {
+			body.Add(sourceType+"[account_holder_type]", StringValue(a.AccountHolderType))
+		}
+
+		if a.RoutingNumber != nil {
+			body.Add(sourceType+"[routing_number]", StringValue(a.RoutingNumber))
+		}
+
+		if a.DefaultForCurrency != nil {
+			body.Add(sourceType+"[default_for_currency]", strconv.FormatBool(BoolValue(a.DefaultForCurrency)))
+		}
+	}
 }
 
 // BankAccountListParams is the set of parameters that can be used when listing bank accounts.
 type BankAccountListParams struct {
-	ListParams
-	AccountID string
+	ListParams `form:"*"`
+
+	// The identifier of the parent account under which the bank accounts are
+	// nested. Either Account or Customer should be populated.
+	Account *string `form:"-"`
+
+	// The identifier of the parent customer under which the bank accounts are
+	// nested. Either Account or Customer should be populated.
+	Customer *string `form:"-"`
 }
 
 // BankAccount represents a Stripe bank account.
 type BankAccount struct {
-	ID                string            `json:"id"`
-	Name              string            `json:"bank_name"`
-	AccountHolderName string            `json:"account_holder_name"`
-	AccountHolderType string            `json:"account_holder_type"`
-	Country           string            `json:"country"`
-	Currency          Currency          `json:"currency"`
-	Default           bool              `json:"default_for_currency"`
-	LastFour          string            `json:"last4"`
-	Fingerprint       string            `json:"fingerprint"`
-	Status            BankAccountStatus `json:"status"`
-	Routing           string            `json:"routing_number"`
-	Deleted           bool              `json:"deleted"`
-	Customer          *Customer         `json:"customer"`
-	Meta              map[string]string `json:"metadata"`
+	AccountHolderName  string                       `json:"account_holder_name"`
+	AccountHolderType  BankAccountAccountHolderType `json:"account_holder_type"`
+	BankName           string                       `json:"bank_name"`
+	Country            string                       `json:"country"`
+	Currency           Currency                     `json:"currency"`
+	Customer           *Customer                    `json:"customer"`
+	DefaultForCurrency bool                         `json:"default_for_currency"`
+	Deleted            bool                         `json:"deleted"`
+	Fingerprint        string                       `json:"fingerprint"`
+	ID                 string                       `json:"id"`
+	Last4              string                       `json:"last4"`
+	Metadata           map[string]string            `json:"metadata"`
+	RoutingNumber      string                       `json:"routing_number"`
+	Status             BankAccountStatus            `json:"status"`
 }
 
 // BankAccountList is a list object for bank accounts.
 type BankAccountList struct {
 	ListMeta
-	Values []*BankAccount `json:"data"`
-}
-
-// Display implements Displayer.Display.
-func (b *BankAccount) Display() string {
-	return fmt.Sprintf("Bank account ending in %s", b.LastFour)
-}
-
-// AppendDetails adds the bank account's details to the query string values.
-func (b *BankAccountParams) AppendDetails(values *url.Values) {
-	values.Add("bank_account[country]", b.Country)
-	values.Add("bank_account[routing_number]", b.Routing)
-	values.Add("bank_account[account_number]", b.Account)
-	if b.AccountHolderName != "" {
-		values.Add("bank_account[account_holder_name]", b.AccountHolderName)
-	}
-	if b.AccountHolderType != "" {
-		values.Add("bank_account[account_holder_type]", b.AccountHolderType)
-	}
-
-	if len(b.Currency) > 0 {
-		values.Add("bank_account[currency]", b.Currency)
-	}
+	Data []*BankAccount `json:"data"`
 }
 
 // UnmarshalJSON handles deserialization of a BankAccount.
 // This custom unmarshaling is needed because the resulting
 // property may be an id or the full struct if it was expanded.
 func (b *BankAccount) UnmarshalJSON(data []byte) error {
-	type bankAccount BankAccount
-	var bb bankAccount
-	err := json.Unmarshal(data, &bb)
-	if err == nil {
-		*b = BankAccount(bb)
-	} else {
-		// the id is surrounded by "\" characters, so strip them
-		b.ID = string(data[1 : len(data)-1])
+	if id, ok := ParseID(data); ok {
+		b.ID = id
+		return nil
 	}
 
+	type bankAccount BankAccount
+	var v bankAccount
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	*b = BankAccount(v)
 	return nil
 }

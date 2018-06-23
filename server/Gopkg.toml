@@ -11,7 +11,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/stripe/stripe-go"
-  version = "13.8.0"
+  version = "35.5.0"
 
 [prune]
   go-tests = true

@@ -2,17 +2,10 @@
 package plan
 
 import (
-	"net/url"
-	"strconv"
+	"net/http"
 
 	stripe "github.com/stripe/stripe-go"
-)
-
-const (
-	Day   stripe.PlanInterval = "day"
-	Week  stripe.PlanInterval = "week"
-	Month stripe.PlanInterval = "month"
-	Year  stripe.PlanInterval = "year"
+	"github.com/stripe/stripe-go/form"
 )
 
 // Client is used to invoke /plans APIs.
@@ -28,30 +21,8 @@ func New(params *stripe.PlanParams) (*stripe.Plan, error) {
 }
 
 func (c Client) New(params *stripe.PlanParams) (*stripe.Plan, error) {
-	body := &url.Values{
-		"id":       {params.ID},
-		"name":     {params.Name},
-		"amount":   {strconv.FormatUint(params.Amount, 10)},
-		"currency": {string(params.Currency)},
-		"interval": {string(params.Interval)},
-	}
-
-	if params.IntervalCount > 0 {
-		body.Add("interval_count", strconv.FormatUint(params.IntervalCount, 10))
-	}
-
-	if params.TrialPeriod > 0 {
-		body.Add("trial_period_days", strconv.FormatUint(params.TrialPeriod, 10))
-	}
-
-	if len(params.Statement) > 0 {
-		body.Add("statement_descriptor", params.Statement)
-	}
-	params.AppendTo(body)
-
 	plan := &stripe.Plan{}
-	err := c.B.Call("POST", "/plans", c.Key, body, &params.Params, plan)
-
+	err := c.B.Call(http.MethodPost, "/plans", c.Key, params, plan)
 	return plan, err
 }
 
@@ -62,18 +33,9 @@ func Get(id string, params *stripe.PlanParams) (*stripe.Plan, error) {
 }
 
 func (c Client) Get(id string, params *stripe.PlanParams) (*stripe.Plan, error) {
-	var body *url.Values
-	var commonParams *stripe.Params
-
-	if params != nil {
-		commonParams = &params.Params
-		body = &url.Values{}
-		params.AppendTo(body)
-	}
-
+	path := stripe.FormatURLPath("/plans/%s", id)
 	plan := &stripe.Plan{}
-	err := c.B.Call("GET", "/plans/"+id, c.Key, body, commonParams, plan)
-
+	err := c.B.Call(http.MethodGet, path, c.Key, params, plan)
 	return plan, err
 }
 
@@ -84,40 +46,22 @@ func Update(id string, params *stripe.PlanParams) (*stripe.Plan, error) {
 }
 
 func (c Client) Update(id string, params *stripe.PlanParams) (*stripe.Plan, error) {
-	var body *url.Values
-	var commonParams *stripe.Params
-
-	if params != nil {
-		commonParams = &params.Params
-		body = &url.Values{}
-
-		if len(params.Name) > 0 {
-			body.Add("name", params.Name)
-		}
-
-		if len(params.Statement) > 0 {
-			body.Add("statement_descriptor", params.Statement)
-		}
-
-		params.AppendTo(body)
-	}
-
+	path := stripe.FormatURLPath("/plans/%s", id)
 	plan := &stripe.Plan{}
-	err := c.B.Call("POST", "/plans/"+id, c.Key, body, commonParams, plan)
-
+	err := c.B.Call(http.MethodPost, path, c.Key, params, plan)
 	return plan, err
 }
 
 // Del removes a plan.
 // For more details see https://stripe.com/docs/api#delete_plan.
-func Del(id string) (*stripe.Plan, error) {
-	return getC().Del(id)
+func Del(id string, params *stripe.PlanParams) (*stripe.Plan, error) {
+	return getC().Del(id, params)
 }
 
-func (c Client) Del(id string) (*stripe.Plan, error) {
+func (c Client) Del(id string, params *stripe.PlanParams) (*stripe.Plan, error) {
+	path := stripe.FormatURLPath("/plans/%s", id)
 	plan := &stripe.Plan{}
-	err := c.B.Call("DELETE", "/plans/"+id, c.Key, nil, nil, plan)
-
+	err := c.B.Call(http.MethodDelete, path, c.Key, params, plan)
 	return plan, err
 }
 
@@ -127,30 +71,13 @@ func List(params *stripe.PlanListParams) *Iter {
 	return getC().List(params)
 }
 
-func (c Client) List(params *stripe.PlanListParams) *Iter {
-	type planList struct {
-		stripe.ListMeta
-		Values []*stripe.Plan `json:"data"`
-	}
+func (c Client) List(listParams *stripe.PlanListParams) *Iter {
+	return &Iter{stripe.GetIter(listParams, func(p *stripe.Params, b *form.Values) ([]interface{}, stripe.ListMeta, error) {
+		list := &stripe.PlanList{}
+		err := c.B.CallRaw(http.MethodGet, "/plans", c.Key, b, p, list)
 
-	var body *url.Values
-	var lp *stripe.ListParams
-	var p *stripe.Params
-
-	if params != nil {
-		body = &url.Values{}
-
-		params.AppendTo(body)
-		lp = &params.ListParams
-		p = params.ToParams()
-	}
-
-	return &Iter{stripe.GetIter(lp, body, func(b url.Values) ([]interface{}, stripe.ListMeta, error) {
-		list := &planList{}
-		err := c.B.Call("GET", "/plans", c.Key, &b, p, list)
-
-		ret := make([]interface{}, len(list.Values))
-		for i, v := range list.Values {
+		ret := make([]interface{}, len(list.Data))
+		for i, v := range list.Data {
 			ret[i] = v
 		}
 

@@ -2,61 +2,124 @@ package stripe
 
 import "encoding/json"
 
-// TransactionStatus is the list of allowed values for the transaction's status.
-// Allowed values are "available", "pending".
-type TransactionStatus string
+// BalanceTransactionStatus is the list of allowed values for the balance transaction's status.
+type BalanceTransactionStatus string
 
-// TransactionType is the list of allowed values for the transaction's type.
-// Allowed values are "charge", "refund", "adjustment", "application_fee",
-// "application_fee_refund", "transfer", "transfer_cancel", "transfer_failure".
-type TransactionType string
+const (
+	BalanceTransactionStatusAvailable BalanceTransactionStatus = "available"
+	BalanceTransactionStatusPending   BalanceTransactionStatus = "pending"
+)
+
+// BalanceTransactionType is the list of allowed values for the balance transaction's type.
+type BalanceTransactionType string
+
+const (
+	BalanceTransactionTypeAdjustment               BalanceTransactionType = "adjustment"
+	BalanceTransactionTypeApplicationFee           BalanceTransactionType = "application_fee"
+	BalanceTransactionTypeApplicationFeeRefund     BalanceTransactionType = "application_fee_refund"
+	BalanceTransactionTypeCharge                   BalanceTransactionType = "charge"
+	BalanceTransactionTypePayment                  BalanceTransactionType = "payment"
+	BalanceTransactionTypePaymentFailureRefund     BalanceTransactionType = "payment_failure_refund"
+	BalanceTransactionTypePaymentRefund            BalanceTransactionType = "payment_refund"
+	BalanceTransactionTypePayout                   BalanceTransactionType = "payout"
+	BalanceTransactionTypePayoutCancel             BalanceTransactionType = "payout_cancel"
+	BalanceTransactionTypePayoutFailure            BalanceTransactionType = "payout_failure"
+	BalanceTransactionTypeRecipientTransfer        BalanceTransactionType = "recipient_transfer"
+	BalanceTransactionTypeRecipientTransferCancel  BalanceTransactionType = "recipient_transfer_cancel"
+	BalanceTransactionTypeRecipientTransferFailure BalanceTransactionType = "recipient_transfer_failure"
+	BalanceTransactionTypeRefund                   BalanceTransactionType = "refund"
+	BalanceTransactionTypeStripeFee                BalanceTransactionType = "stripe_fee"
+	BalanceTransactionTypeTransfer                 BalanceTransactionType = "transfer"
+	BalanceTransactionTypeTransferRefund           BalanceTransactionType = "transfer_refund"
+)
+
+// BalanceTransactionSourceType consts represent valid balance transaction sources.
+type BalanceTransactionSourceType string
+
+const (
+	BalanceTransactionSourceTypeApplicationFee    BalanceTransactionSourceType = "application_fee"
+	BalanceTransactionSourceTypeCharge            BalanceTransactionSourceType = "charge"
+	BalanceTransactionSourceTypeDispute           BalanceTransactionSourceType = "dispute"
+	BalanceTransactionSourceTypePayout            BalanceTransactionSourceType = "payout"
+	BalanceTransactionSourceTypeRecipientTransfer BalanceTransactionSourceType = "recipient_transfer"
+	BalanceTransactionSourceTypeRefund            BalanceTransactionSourceType = "refund"
+	BalanceTransactionSourceTypeReversal          BalanceTransactionSourceType = "reversal"
+	BalanceTransactionSourceTypeTransfer          BalanceTransactionSourceType = "transfer"
+)
+
+// BalanceTransactionSource describes the source of a balance Transaction.
+// The Type should indicate which object is fleshed out.
+// For more details see https://stripe.com/docs/api#retrieve_balance_transaction
+type BalanceTransactionSource struct {
+	ApplicationFee    *ApplicationFee              `json:"-"`
+	Charge            *Charge                      `json:"-"`
+	Dispute           *Dispute                     `json:"-"`
+	ID                string                       `json:"id"`
+	Payout            *Payout                      `json:"-"`
+	RecipientTransfer *RecipientTransfer           `json:"-"`
+	Refund            *Refund                      `json:"-"`
+	Reversal          *Reversal                    `json:"-"`
+	Transfer          *Transfer                    `json:"-"`
+	Type              BalanceTransactionSourceType `json:"object"`
+}
 
 // BalanceParams is the set of parameters that can be used when retrieving a balance.
 // For more details see https://stripe.com/docs/api#balance.
 type BalanceParams struct {
-	Params
+	Params `form:"*"`
 }
 
-// TxParams is the set of parameters that can be used when retrieving a transaction.
+// BalanceTransactionParams is the set of parameters that can be used when retrieving a transaction.
 // For more details see https://stripe.com/docs/api#retrieve_balance_transaction.
-type TxParams struct {
-	Params
+type BalanceTransactionParams struct {
+	Params `form:"*"`
 }
 
-// TxListParams is the set of parameters that can be used when listing balance transactions.
+// BalanceTransactionListParams is the set of parameters that can be used when listing balance transactions.
 // For more details see https://stripe.com/docs/api/#balance_history.
-type TxListParams struct {
-	ListParams
-	Created, Available      int64
-	Currency, Src, Transfer string
-	Type                    TransactionType
+type BalanceTransactionListParams struct {
+	ListParams       `form:"*"`
+	AvailableOn      *int64            `form:"available_on"`
+	AvailableOnRange *RangeQueryParams `form:"available_on"`
+	Created          *int64            `form:"created"`
+	CreatedRange     *RangeQueryParams `form:"created"`
+	Currency         *string           `form:"currency"`
+	Payout           *string           `form:"payout"`
+	Source           *string           `form:"source"`
+	Type             *string           `form:"type"`
 }
 
 // Balance is the resource representing your Stripe balance.
 // For more details see https://stripe.com/docs/api/#balance.
 type Balance struct {
-	// Live indicates the live mode.
-	Live      bool     `json:"livemode"`
-	Available []Amount `json:"available"`
-	Pending   []Amount `json:"pending"`
+	Available []*Amount `json:"available"`
+	Livemode  bool      `json:"livemode"`
+	Pending   []*Amount `json:"pending"`
 }
 
-// Transaction is the resource representing the balance transaction.
+// BalanceTransaction is the resource representing the balance transaction.
 // For more details see https://stripe.com/docs/api/#balance.
-type Transaction struct {
-	ID         string            `json:"id"`
-	Amount     int64             `json:"amount"`
-	Currency   Currency          `json:"currency"`
-	Available  int64             `json:"available_on"`
-	Created    int64             `json:"created"`
-	Fee        int64             `json:"fee"`
-	FeeDetails []TxFee           `json:"fee_details"`
-	Net        int64             `json:"net"`
-	Status     TransactionStatus `json:"status"`
-	Type       TransactionType   `json:"type"`
-	Desc       string            `json:"description"`
-	Src        string            `json:"source"`
-	Recipient  string            `json:"recipient"`
+type BalanceTransaction struct {
+	Amount       int64                     `json:"amount"`
+	AvailableOn  int64                     `json:"available_on"`
+	Created      int64                     `json:"created"`
+	Currency     Currency                  `json:"currency"`
+	Description  string                    `json:"description"`
+	ExchangeRate float64                   `json:"exchange_rate"`
+	ID           string                    `json:"id"`
+	Fee          int64                     `json:"fee"`
+	FeeDetails   []*BalanceTransactionFee  `json:"fee_details"`
+	Net          int64                     `json:"net"`
+	Recipient    string                    `json:"recipient"`
+	Source       *BalanceTransactionSource `json:"source"`
+	Status       BalanceTransactionStatus  `json:"status"`
+	Type         BalanceTransactionType    `json:"type"`
+}
+
+// BalanceTransactionList is a list of transactions as returned from a list endpoint.
+type BalanceTransactionList struct {
+	ListMeta
+	Data []*BalanceTransaction `json:"data"`
 }
 
 // Amount is a structure wrapping an amount value and its currency.
@@ -65,28 +128,75 @@ type Amount struct {
 	Currency Currency `json:"currency"`
 }
 
-// TxFee is a structure that breaks down the fees in a transaction.
-type TxFee struct {
+// BalanceTransactionFee is a structure that breaks down the fees in a transaction.
+type BalanceTransactionFee struct {
 	Amount      int64    `json:"amount"`
-	Currency    Currency `json:"currency"`
-	Type        string   `json:"type"`
-	Desc        string   `json:"description"`
 	Application string   `json:"application"`
+	Currency    Currency `json:"currency"`
+	Description string   `json:"description"`
+	Type        string   `json:"type"`
 }
 
 // UnmarshalJSON handles deserialization of a Transaction.
 // This custom unmarshaling is needed because the resulting
 // property may be an id or the full struct if it was expanded.
-func (t *Transaction) UnmarshalJSON(data []byte) error {
-	type transaction Transaction
-	var tt transaction
-	err := json.Unmarshal(data, &tt)
-	if err == nil {
-		*t = Transaction(tt)
-	} else {
-		// the id is surrounded by "\" characters, so strip them
-		t.ID = string(data[1 : len(data)-1])
+func (t *BalanceTransaction) UnmarshalJSON(data []byte) error {
+	if id, ok := ParseID(data); ok {
+		t.ID = id
+		return nil
 	}
 
+	type balanceTransaction BalanceTransaction
+	var v balanceTransaction
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	*t = BalanceTransaction(v)
 	return nil
+}
+
+// UnmarshalJSON handles deserialization of a BalanceTransactionSource.
+// This custom unmarshaling is needed because the specific
+// type of transaction source it refers to is specified in the JSON
+func (s *BalanceTransactionSource) UnmarshalJSON(data []byte) error {
+	if id, ok := ParseID(data); ok {
+		s.ID = id
+		return nil
+	}
+
+	type balanceTransactionSource BalanceTransactionSource
+	var v balanceTransactionSource
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+
+	var err error
+	*s = BalanceTransactionSource(v)
+
+	switch s.Type {
+	case BalanceTransactionSourceTypeApplicationFee:
+		err = json.Unmarshal(data, &s.ApplicationFee)
+	case BalanceTransactionSourceTypeCharge:
+		err = json.Unmarshal(data, &s.Charge)
+	case BalanceTransactionSourceTypeDispute:
+		err = json.Unmarshal(data, &s.Dispute)
+	case BalanceTransactionSourceTypePayout:
+		err = json.Unmarshal(data, &s.Payout)
+	case BalanceTransactionSourceTypeRecipientTransfer:
+		err = json.Unmarshal(data, &s.RecipientTransfer)
+	case BalanceTransactionSourceTypeRefund:
+		err = json.Unmarshal(data, &s.Refund)
+	case BalanceTransactionSourceTypeReversal:
+		err = json.Unmarshal(data, &s.Reversal)
+	case BalanceTransactionSourceTypeTransfer:
+		err = json.Unmarshal(data, &s.Transfer)
+	}
+
+	return err
+}
+
+// MarshalJSON handles serialization of a BalanceTransactionSource.
+func (s *BalanceTransactionSource) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.ID)
 }
