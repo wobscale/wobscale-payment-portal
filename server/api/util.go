@@ -67,7 +67,7 @@ func _stripeUser(githubUser *github.User) (*stripe.Customer, error) {
 	var thisCustomer *stripe.Customer
 	for allCustomers.Next() {
 		c := allCustomers.Customer()
-		userid := c.Meta[string(GithubUserIDMetadata)]
+		userid := c.Metadata[string(GithubUserIDMetadata)]
 		if userid == githubUid {
 			thisCustomer = c
 			break
@@ -94,7 +94,6 @@ func writeHappyResp(w http.ResponseWriter, data interface{}) {
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logrus.Errorf("Error marshalling response: %v", err)
-		// TODO, this doesn't work does it?
 		w.WriteHeader(500)
 	}
 }

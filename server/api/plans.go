@@ -3,12 +3,14 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/plan"
+	"github.com/stripe/stripe-go/product"
 )
 
 type Plan string
@@ -18,7 +20,7 @@ const (
 	Plan2U = "colo-sea1-2U"
 )
 
-func PlanPrice(plan string) (uint64, error) {
+func PlanPrice(plan string) (int64, error) {
 	_, plans, err := getStripePlans()
 	if err != nil {
 		return 0, err
@@ -40,8 +42,8 @@ func ValidPlan(plan string) bool {
 
 type SubPlan struct {
 	Name string
-	Cost uint64
-	Num  uint64
+	Cost int64
+	Num  int64
 }
 
 type PlanResp []PlanRespEl
@@ -49,7 +51,7 @@ type PlanResp []PlanRespEl
 type PlanRespEl struct {
 	Name string
 	ID   string
-	Cost uint64
+	Cost int64
 }
 
 var stripePlanCacheMutex sync.Mutex
@@ -72,9 +74,14 @@ func getStripePlans() ([]byte, []*stripe.Plan, error) {
 	planResp := PlanResp{}
 	for plans.Next() {
 		plan := plans.Plan()
+		planProduct, err := product.Get(plan.Product, &stripe.ProductParams{})
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to get plan's product %v: %v", plan.Product, err)
+		}
+
 		planArr = append(planArr, plan)
 		planResp = append(planResp, PlanRespEl{
-			Name: plan.Name,
+			Name: planProduct.Name,
 			ID:   plan.ID,
 			Cost: plan.Amount,
 		})

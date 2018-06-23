@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/card"
+	"github.com/stripe/stripe-go/product"
 	"github.com/stripe/stripe-go/sub"
 )
 
@@ -23,7 +25,6 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	thisCustomer, authedUser, err := getStripeAndGithubUser(req.GithubAccessToken)
-
 	if err == NoSuchCustomerErr {
 		writeHappyResp(w, GetUserNewUserResp{
 			GithubUsername: *authedUser.Login,
@@ -31,27 +32,41 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	if err != nil {
+		serverErr(w, err.Error())
+		return
+	}
 
-	subs := sub.List(&stripe.SubListParams{Customer: thisCustomer.ID})
+	subs := sub.List(&stripe.SubscriptionListParams{Customer: thisCustomer.ID})
 
 	subPlans := []SubPlan{}
 	for subs.Next() {
-		sub := subs.Sub()
+		sub := subs.Subscription()
+		if sub.Status == stripe.SubscriptionStatusCanceled {
+			continue
+		}
+
+		planProduct, err := product.Get(sub.Plan.Product, &stripe.ProductParams{})
+		if err != nil {
+			serverErr(w, fmt.Sprintf("Unable to get associated product %v: %v", sub.Plan.Product, err))
+			return
+		}
+
 		plan := SubPlan{
-			Name: sub.Plan.Name,
+			Name: planProduct.Name,
 			Cost: sub.Plan.Amount,
 			Num:  sub.Quantity,
 		}
 		subPlans = append(subPlans, plan)
 	}
 
-	custCard, err := card.Get(thisCustomer.DefaultSource.ID, &stripe.CardParams{Customer: thisCustomer.ID})
+	custCard, err := card.Get(thisCustomer.DefaultSource.ID, &stripe.CardParams{Customer: &thisCustomer.ID})
 	if err != nil {
 		serverErr(w, "Difficulty getting payment source")
 		return
 	}
 
-	cardStr := custCard.Display()
+	cardStr := "Bank account ending in " + custCard.Last4
 	resp := GetUserResp{
 		GithubUsername:   *authedUser.Login,
 		StripeCustomerID: thisCustomer.ID,

@@ -62,11 +62,11 @@ func NewSubscription(w http.ResponseWriter, r *http.Request) {
 	// valid, let's create this customer
 
 	customerParams := &stripe.CustomerParams{
-		Email: req.Email,
-		Desc:  req.Nickname,
+		Email:       &req.Email,
+		Description: &req.Nickname,
 	}
 
-	customerParams.Meta = map[string]string{
+	customerParams.Metadata = map[string]string{
 		string(GithubUserIDMetadata):   githubUid,
 		string(GithubUsernameMetadata): *authedUser.Login,
 	}

@@ -11,7 +11,7 @@ import (
 
 type AddSubReq struct {
 	PlanName          string
-	PlanNum           uint64
+	PlanNum           int64
 	GithubAccessToken string
 	IdempotencyToken  string
 }
@@ -34,38 +34,45 @@ func AddSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find the existing sub for this plan if we can
-	subs := sub.List(&stripe.SubListParams{Customer: thisCustomer.ID})
+	subs := sub.List(&stripe.SubscriptionListParams{Customer: thisCustomer.ID})
 	if subs.Err() != nil {
 		serverErr(w, "Error getting stripe subscriptions")
 		return
 	}
 
-	var existing *stripe.Sub
+	var existing *stripe.Subscription
 	for subs.Next() {
-		sub := subs.Sub()
+		sub := subs.Subscription()
+		if sub.Status == stripe.SubscriptionStatusCanceled {
+			continue
+		}
 		if sub.Plan.ID == req.PlanName {
 			existing = sub
 			break
 		}
 	}
 
-	var params *stripe.SubParams
-	var newSub *stripe.Sub
+	var params *stripe.SubscriptionParams
+	var newSub *stripe.Subscription
 	if existing == nil {
 		// Create a new subscription
-		params = &stripe.SubParams{
-			Plan:     req.PlanName,
-			Quantity: req.PlanNum,
-			Customer: thisCustomer.ID,
+		params = &stripe.SubscriptionParams{
+			Plan:     &req.PlanName,
+			Quantity: &req.PlanNum,
+			Customer: &thisCustomer.ID,
 		}
-		params.IdempotencyKey = req.IdempotencyToken
+		if req.IdempotencyToken != "" {
+			params.IdempotencyKey = &req.IdempotencyToken
+		}
 		newSub, err = sub.New(params)
 	} else {
 		// One already exists, update the quantity
-		params = &stripe.SubParams{
-			Plan:     req.PlanName,
-			Quantity: existing.Quantity + req.PlanNum,
-			Customer: thisCustomer.ID,
+		newQuantity := existing.Quantity + req.PlanNum
+		params = &stripe.SubscriptionParams{
+			Quantity: &newQuantity,
+		}
+		if req.IdempotencyToken != "" {
+			params.IdempotencyKey = &req.IdempotencyToken
 		}
 
 		newSub, err = sub.Update(existing.ID, params)

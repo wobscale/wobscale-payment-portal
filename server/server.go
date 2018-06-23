@@ -13,18 +13,18 @@ import (
 )
 
 func main() {
-	stripeApiKey := os.Getenv("STRIPE_API_KEY")
-	if stripeApiKey == "" {
+	stripeAPIKey := os.Getenv("STRIPE_API_KEY")
+	if stripeAPIKey == "" {
 		panic("STRIPE_API_KEY environment variable required")
 	}
-	stripe.Key = stripeApiKey
+	stripe.Key = stripeAPIKey
 
 	githubSecretKey := os.Getenv("GITHUB_SECRET_KEY")
 	if githubSecretKey == "" {
 		panic("GITHUB_SECRET_KEY environment variable required")
 	}
-	githubClientId := os.Getenv("GITHUB_CLIENT_ID")
-	if githubClientId == "" {
+	githubClientID := os.Getenv("GITHUB_CLIENT_ID")
+	if githubClientID == "" {
 		panic("GITHUB_CLIENT_ID environment variable required")
 	}
 
@@ -48,7 +48,7 @@ func main() {
 	router.HandleFunc("/updatePayment", api.UpdatePayment)
 	router.HandleFunc("/addSubscription", api.AddSubscription)
 	router.HandleFunc("/user", api.GetUser)
-	router.HandleFunc("/githubLogin", api.GithubLogin(githubSecretKey, githubClientId))
+	router.HandleFunc("/githubLogin", api.GithubLogin(githubSecretKey, githubClientID))
 	router.HandleFunc("/plans", api.GetPlans)
 	log.Fatal(http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, withCors(router))))
 }
