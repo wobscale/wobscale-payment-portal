@@ -63,7 +63,6 @@
     var initialize = function() {
       accessToken = window.localStorage.getItem("githubAccessKey");
 
-      //$scope.data.loading = true;
       $scope.data = {};
       $scope.newUser = false;
       $scope.data.plans = [];
@@ -79,7 +78,8 @@
         $scope.data.addingSub = false;
         $scope.data.loading = false;
       }, function(err) {
-        window.alert("Error loading page data: ", err);
+        console.log("error: ", err);
+        $scope.logout();
       });
     };
 
@@ -102,6 +102,7 @@
         return;
       }
       $scope.data.addingSub = true;
+      $scope.data.idempotencyToken = Math.floor(Math.random() * 1e6).toString();
       if($scope.data.addPlanNum < 1 || $scope.data.addPlanNum > 100) {
         window.alert("Invalid plan configuration; pick a small numeric number of subscriptions");
         $scope.data.addingSub = false;
@@ -112,6 +113,7 @@
         GithubAccessToken: accessToken,
         PlanName: $scope.data.addPlanName,
         PlanNum: $scope.data.addPlanNum,
+        IdempotencyToken: $scope.data.idempotencyToken,
       }).then(function(resp) {
         reinitialize();
       }, function(err) {
@@ -142,13 +144,6 @@
             $scope.data.subbedPlans = resp.data.Plans;
             $scope.data.paymentSource = resp.data.PaymentSource;
           }
-        }, function(err) {
-          if(err.data.GithubAuthError) {
-            window.alert("Bad github login");
-            $scope.logout();
-            return;
-          }
-          window.alert(JSON.stringify(err));
         });
     };
 
