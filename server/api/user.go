@@ -66,7 +66,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cardStr := "Bank account ending in " + custCard.Last4
+	cardStr := fmt.Sprintf("%v ending in %v", custCard.Brand, custCard.Last4)
 	resp := GetUserResp{
 		GithubUsername:   *authedUser.Login,
 		StripeCustomerID: thisCustomer.ID,
