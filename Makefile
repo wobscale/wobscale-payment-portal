@@ -1,20 +1,28 @@
 all: server-docker client-docker
 
+# docker prefix, e.g. quay.io/username/repo
+# The suffixes '-server:$TAG' and '-client:$TAG' will be appended to it and used as repos
+DOCKER_PREFIX := wobscale/payments
+
+DOCKER_TAG := $(shell git rev-parse --short HEAD)
+
 .PHONY: server
 server:
 	$(MAKE) -C server server
 
 .PHONY: server-docker
 server-docker: server
-	docker build -t euank/wobscale-payments-server -f ./server/Dockerfile ./server
+	docker build -t $(DOCKER_PREFIX)-server:$(DOCKER_TAG) -f ./server/Dockerfile ./server
 
+# Note: this docker image is only used for local development, not production
+# The tag is left out for that reason
 .PHONY: nginx
 nginx:
-	docker build -t euank/wobscale-payments-nginx -f ./nginx/Dockerfile ./nginx
+	docker build -t $(DOCKER_PREFIX)-nginx -f ./nginx/Dockerfile ./nginx
 
 .PHONY: client-docker
 client-docker:
-	docker build -t euank/wobscale-payments-client -f ./client/docker/Dockerfile ./client
+	docker build -t $(DOCKER_PREFIX)-client:$(DOCKER_TAG) -f ./client/docker/Dockerfile ./client
 
 # NOTE, this port must match your github clientid/secret's 'redirect_uri'; the
 # 'redirect uri' should be https://127.0.0.1:$DEVPORT/login
@@ -36,11 +44,12 @@ ifndef STRIPE_PUBLISHABLE_KEY
 	$(error STRIPE_PUBLISHABLE_KEY required)
 endif
 
+# Dev use only
 ./certs/ssl.key ./certs/ssl.pem:
 	mkdir -p certs
 	openssl req -subj '/CN=127.0.0.1:$(DEVPORT)/O=wobscale/C=US/subjectAltName=127.0.0.2:$(DEVPORT)' \
-		-new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 \
-		-keyout certs/ssl.key -out certs/ssl.pem
+	  -new -newkey rsa:2048 -sha256 -days 365 -nodes -x509 \
+	  -keyout certs/ssl.key -out certs/ssl.pem
 
 ./certs/dhparam.pem:
 	mkdir -p certs
@@ -61,13 +70,13 @@ dev: dev-checkenv nginx client-docker server-docker certs
 	           -e GITHUB_SECRET_KEY=$(GITHUB_SECRET_KEY) \
 	           -e GITHUB_CLIENT_ID=$(GITHUB_CLIENT_ID) \
 	           -e CORS_ALLOW_ORIGIN="*" \
-	           euank/wobscale-payments-server
+	           $(DOCKER_PREFIX)-server:$(DOCKER_TAG)
 	docker run -d --net=wobscale-payments --name="wobscale-payments-client" \
 	           -e ENV_ENVIRONMENT=dev \
 	           -e ENV_STRIPE_PUBLISHABLE_KEY=$(STRIPE_PUBLISHABLE_KEY) \
 	           -e ENV_GITHUB_CLIENT_ID=$(GITHUB_CLIENT_ID) \
 	           -e ENV_API_URL=https://127.0.0.2:$(DEVPORT) \
-	           euank/wobscale-payments-client
+	           $(DOCKER_PREFIX)-client:$(DOCKER_TAG)
 	sleep 3
 	docker run -d --net=wobscale-payments --name="wobscale-payments-nginx" -p $(DEVPORT):443 \
 	           -e ENV_API_PORT=443 \
@@ -77,11 +86,10 @@ dev: dev-checkenv nginx client-docker server-docker certs
 	           -e ENV_CLIENT_NAME=wobscale-payments-client \
 	           -e ENV_SERVER_NAME=wobscale-payments-server \
 	           -v "$(shell pwd)/certs:/certs" \
-	           euank/wobscale-payments-nginx
+	           $(DOCKER_PREFIX)-nginx
 	@echo "Visit https://127.0.0.2:$(DEVPORT) and accept an ssl warning.."
 	@echo "Then visit https://127.0.0.1:$(DEVPORT) for a good time :)"
 
 push:
-	docker push euank/wobscale-payments-client
-	docker push euank/wobscale-payments-nginx
-	docker push euank/wobscale-payments-server
+	docker push $(DOCKER_PREFIX)-client:$(DOCKER_TAG)
+	docker push $(DOCKER_PREFIX)-server:$(DOCKER_TAG)
