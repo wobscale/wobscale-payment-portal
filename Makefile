@@ -6,13 +6,9 @@ DOCKER_PREFIX := wobscale/payments
 
 DOCKER_TAG := $(shell git rev-parse --short HEAD)
 
-.PHONY: server
-server:
-	$(MAKE) -C server server
-
 .PHONY: server-docker
-server-docker: server
-	docker build -t $(DOCKER_PREFIX)-server:$(DOCKER_TAG) -f ./server/Dockerfile ./server
+server-docker:
+	make -C server server-docker DOCKER_PREFIX=$(DOCKER_PREFIX) DOCKER_TAG=$(DOCKER_TAG)
 
 # Note: this docker image is only used for local development, not production
 # The tag is left out for that reason
