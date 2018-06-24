@@ -64,7 +64,7 @@
       accessToken = window.localStorage.getItem("githubAccessKey");
 
       $scope.data = {};
-      $scope.newUser = false;
+      $scope.data.newUser = false;
       $scope.data.plans = [];
       $scope.data.subbedPlans = [];
       $scope.data.addPlanNum = 1;
@@ -138,8 +138,9 @@
         .then(function(resp) {
           $scope.githubUsername = resp.data.GithubUsername;
           if(resp.data.NewUser) {
-            $scope.newUser = true;
+            $scope.data.newUser = true;
           } else {
+            $scope.data.newUser = false;
             $scope.stripeId = resp.data.StripeCustomerID;
             $scope.data.subbedPlans = resp.data.Plans;
             $scope.data.paymentSource = resp.data.PaymentSource;

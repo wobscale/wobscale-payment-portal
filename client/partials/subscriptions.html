@@ -1,7 +1,7 @@
 <section id="auth">
   <p>Hello, github.com/{{ githubUsername }} (<a href="#" ng-click="logout()">log out</a>) <span ng-show="stripeId">&mdash; <code>{{ stripeId }} </code></span></p>
 </section>
-<div id="subinfo" ng-show="!newUser">
+<div id="subinfo" ng-show="!data.newUser">
   <section id="subscription">
     <p>You pay <strong>${{ totalSub() / 100 }} </strong> monthly for the following:</p>
     <ul>
@@ -64,7 +64,7 @@
     </form>
   </section>
 </div>
-<div id="newuser" ng-show="newUser">
+<div id="newuser" ng-show="data.newUser">
   <p>You appear to be a new user.
     If this is wrong, email <a href="mailto:admin@wobscale.website">admin@wobscale.website</a>.</p>
 
