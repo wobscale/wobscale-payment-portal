@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -28,6 +29,12 @@ func userErr(w http.ResponseWriter, err string) {
 func serverErr(w http.ResponseWriter, err string) {
 	w.WriteHeader(500)
 	out, _ := json.Marshal(apiErr{err})
+	w.Write(out)
+}
+
+func serverErrf(w http.ResponseWriter, err string, args ...interface{}) {
+	w.WriteHeader(500)
+	out, _ := json.Marshal(apiErr{fmt.Sprintf(err, args...)})
 	w.Write(out)
 }
 

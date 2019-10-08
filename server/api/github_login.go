@@ -37,21 +37,24 @@ func GithubLogin(githubSecret, githubClient string) http.HandlerFunc {
 		defer cancel()
 		httpReq, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token?client_id="+githubClient+"&client_secret="+githubSecret+"&code="+url.QueryEscape(req.GithubCode), nil)
 		if err != nil {
-			serverErr(w, "Error constructing github req: "+err.Error())
+			serverErrf(w, "Error constructing github req: %s", err)
 			return
 		}
 		httpReq.Header.Set("Accept", "application/json")
 		httpReq = httpReq.WithContext(timeoutCtx)
 		resp, err := http.DefaultClient.Do(httpReq)
 		if err != nil {
-			serverErr(w, "Error making github req: "+err.Error())
+			serverErrf(w, "Error making github req: %s", err)
 			return
+		}
+		if resp.StatusCode >= 400 {
+			serverErrf(w, "Github returned an error status: %d", resp.StatusCode)
 		}
 
 		logrus.Debugf("github response: %v", resp)
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			serverErr(w, "Bad github resp: "+err.Error())
+			serverErrf(w, "Bad github resp: %s", err)
 			return
 		}
 		var githubResp githubOauthResponse
