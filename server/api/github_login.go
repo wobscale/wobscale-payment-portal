@@ -1,10 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/Sirupsen/logrus"
 )
 
 type GithubLoginRequest struct {
@@ -29,29 +33,50 @@ func GithubLogin(githubSecret, githubClient string) http.HandlerFunc {
 		}
 
 		// The go-github library doesn't have an accessToken api, just do it by hand
-		// TODO, timeout
-		resp, err := http.Post("https://github.com/login/oauth/access_token?client_id="+githubClient+"&client_secret="+githubSecret+"&code="+url.QueryEscape(req.GithubCode), "", nil)
+		timeoutCtx, cancel := context.WithTimeout(context.TODO(), 4*time.Second)
+		defer cancel()
+		httpReq, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token?client_id="+githubClient+"&client_secret="+githubSecret+"&code="+url.QueryEscape(req.GithubCode), nil)
+		if err != nil {
+			serverErr(w, "Error constructing github req: "+err.Error())
+			return
+		}
+		httpReq.Header.Set("Accept", "application/json")
+		httpReq = httpReq.WithContext(timeoutCtx)
+		resp, err := http.DefaultClient.Do(httpReq)
 		if err != nil {
 			serverErr(w, "Error making github req: "+err.Error())
 			return
 		}
+
+		logrus.Debugf("github response: %v", resp)
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			serverErr(w, "Bad github resp: "+err.Error())
 			return
 		}
-		vals, err := url.ParseQuery(string(respBody))
-		if err != nil {
-			serverErr(w, err.Error())
+		var githubResp githubOauthResponse
+		if err := json.Unmarshal(respBody, &githubResp); err != nil {
+			logrus.Warnf("expected json, got %s", respBody)
+			serverErr(w, "invalid github oauth response; not valid json")
 			return
 		}
-		accessToken := vals.Get("access_token")
-		if accessToken == "" {
-			serverErr(w, "invalid github response; empty")
+		if githubResp.AccessToken == "" {
+			logrus.Debugf("empty access token: %s", respBody)
+			serverErr(w, "invalid github response; no auth token")
 			return
 		}
 		w.WriteHeader(200)
-		w.Write([]byte(`{"AccessToken":"` + vals.Get("access_token") + `"}`))
+		json.NewEncoder(w).Encode(struct {
+			AccessToken string
+		}{
+			githubResp.AccessToken,
+		})
 		return
 	}
+}
+
+type githubOauthResponse struct {
+	AccessToken string `json:"access_token"`
+	Scope       string `json:"scope"`
+	TokenType   string `json:"token_type"`
 }

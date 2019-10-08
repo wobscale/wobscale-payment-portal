@@ -27,12 +27,28 @@ func main() {
 	if githubClientID == "" {
 		panic("GITHUB_CLIENT_ID environment variable required")
 	}
+	isDev := false
+	if os.Getenv("ENV_ENVIRONMENT") == "dev" {
+		isDev = true
+	}
 
 	origin := os.Getenv("CORS_ALLOW_ORIGIN")
 	if origin == "" {
 		origin = "https://pay.wobscale.website"
 		logrus.Warnf("Origin not set; defaulting to " + origin)
 	}
+	logLevel := logrus.WarnLevel
+	if isDev {
+		logLevel = logrus.DebugLevel
+	}
+	if lvl := os.Getenv("LOG_LEVEL"); lvl != "" {
+		var err error
+		logLevel, err = logrus.ParseLevel(lvl)
+		if err != nil {
+			panic("LOG_LEVEL invalid")
+		}
+	}
+	logrus.SetLevel(logLevel)
 
 	router := mux.NewRouter().StrictSlash(true)
 
